@@ -1,0 +1,8 @@
+{
+  "name": "mandarin-tutor-api",
+  "version": "1.0.0",
+  "description": "Serverless functions for Mandarin Tutor application",
+  "dependencies": {
+    "microsoft-cognitiveservices-speech-sdk": "^1.34.0"
+  }
+}

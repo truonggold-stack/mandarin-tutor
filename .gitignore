@@ -1,0 +1,26 @@
+# Environment variables with sensitive data
+.env
+.env.local
+.env.production
+
+# Vercel
+.vercel
+
+# Node modules
+node_modules/
+api/node_modules/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build outputs
+dist/
+build/

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mandarin Tutor - 中文导师</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Azure Speech SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎓 Mandarin Tutor</h1>
+            <p class="subtitle">中文发音练习助手</p>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="translate">Translate</button>
+            <button class="tab-btn" data-tab="practice">Practice</button>
+            <button class="tab-btn" data-tab="game">Matching Game</button>
+            <button class="tab-btn" data-tab="upload">Upload Lesson</button>
+            <button class="tab-btn" data-tab="progress">Progress</button>
+        </nav>
+
+        <!-- Upload Tab -->
+        <div class="tab-content" id="upload-tab">
+            <div class="upload-section">
+                <h2>📁 Create Lesson from Audio</h2>
+                <p class="section-description">Upload audio files to analyze Chinese pronunciation and create custom lessons for your children.</p>
+                
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-icon">🎵</div>
+                    <p>Drag and drop audio files here or click to browse</p>
+                    <input type="file" id="audio-file" accept="audio/*" multiple>
+                    <button class="btn-primary" onclick="document.getElementById('audio-file').click()">
+                        Choose Audio Files
+                    </button>
+                </div>
+                
+                <div class="uploaded-files" id="uploaded-files"></div>
+                
+                <div class="processing-section" id="processing-section" style="display: none;">
+                    <h3>🔄 Analyzing Audio...</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <p id="processing-status">Analyzing audio content and pronunciation quality...</p>
+                </div>
+
+                <!-- Audio Analysis Results -->
+                <div class="audio-analysis" id="audio-analysis" style="display: none;">
+                    <h3>📊 Audio Analysis Results</h3>
+                    <div class="analysis-grid" id="analysis-grid">
+                        <!-- Analysis items will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Detected Content Section -->
+                <div class="detected-content" id="detected-content" style="display: none;">
+                    <h3>🎯 Detected Content - Verify & Edit</h3>
+                    <p class="section-description">Review detected phrases and their quality ratings. Edit as needed before creating your lesson.</p>
+                    
+                    <div class="detected-items" id="detected-items">
+                        <!-- Detected items will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Lesson Builder -->
+                <div class="lesson-builder" id="lesson-builder" style="display: none;">
+                    <h3>🏗️ Build Your Lesson</h3>
+                    <p class="section-description">Drag items from verified content to create your custom lesson.</p>
+                    
+                    <div class="builder-grid">
+                        <div class="builder-column">
+                            <h4>Available Items</h4>
+                            <div class="available-items" id="available-items">
+                                <!-- Available items will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="builder-column">
+                            <h4>Lesson Content</h4>
+                            <div class="lesson-name-input">
+                                <input type="text" id="lesson-name" placeholder="Enter lesson name (e.g., 'Basic Greetings')">
+                            </div>
+                            <div class="lesson-items" id="lesson-items">
+                                <p class="empty-state">Drag items here to build your lesson</p>
+                            </div>
+                            <button class="btn-primary" id="create-lesson-btn" style="display: none;">
+                                ✅ Create Lesson
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Translate Tab -->
+        <div class="tab-content active" id="translate-tab">
+            <div class="translate-section">
+                <h2>🌐 English to Mandarin Translation</h2>
+                <p class="section-description">Enter English phrases to translate to Mandarin. Translations will be added to your practice exercises.</p>
+                
+                <div class="translation-input-area">
+                    <label for="english-input">English Phrase:</label>
+                    <input type="text" id="english-input" placeholder="Enter an English phrase (e.g., 'Good morning')" />
+                    <button class="btn-primary" id="translate-btn">Translate to Mandarin</button>
+                </div>
+
+                <div class="translation-result" id="translation-result" style="display: none;">
+                    <h3>Translation Result</h3>
+                    <div class="result-card">
+                        <div class="result-chinese" id="result-chinese">早上好</div>
+                        <div class="result-pinyin" id="result-pinyin">zǎo shàng hǎo</div>
+                        <div class="result-english" id="result-english">Good morning</div>
+                        <div class="result-actions">
+                            <button class="btn-secondary" id="play-translation">🔊 Listen</button>
+                            <button class="btn-primary" id="add-to-exercises">➕ Add to Exercises</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="saved-translations">
+                    <h3>📝 Saved Translations</h3>
+                    <div class="translations-list" id="translations-list">
+                        <p class="empty-state">No translations saved yet. Start translating!</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn-primary" onclick="createLessonFromTranslations()" style="flex: 1;">
+                            📚 Create Lesson
+                        </button>
+                        <button class="btn-secondary" onclick="createGameFromTranslations()" style="flex: 1;">
+                            🎮 Create Game
+                        </button>
+                    </div>
+                </div>
+
+                <div class="saved-translations" style="margin-top: 40px;">
+                    <h3>📚 My Lessons</h3>
+                    <p class="section-description">Manage your created lessons</p>
+                    <div id="lesson-list" class="translations-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Practice Tab -->
+        <div class="tab-content" id="practice-tab">
+            <div class="practice-section">
+                <h2>🗣️ Pronunciation Practice</h2>
+                
+                <div class="lesson-selector">
+                    <label for="lesson-select">Choose a lesson:</label>
+                    <select id="lesson-select">
+                        <option value="">Select a lesson...</option>
+                    </select>
+                </div>
+
+                <div class="exercise-container" id="exercise-container" style="display: none;">
+                    <div class="exercise-card">
+                        <div class="chinese-text" id="chinese-text">你好</div>
+                        <div class="pinyin-text" id="pinyin-text">nǐ hǎo</div>
+                        <div class="english-text" id="english-text">Hello</div>
+                        
+                        <div class="audio-controls">
+                            <button class="btn-secondary" id="play-reference">
+                                🔊 Play Reference
+                            </button>
+                            <button class="btn-primary" id="record-btn">
+                                🎤 Record Your Voice
+                            </button>
+                            <button class="btn-secondary" id="play-recording" style="display: none;">
+                                ▶️ Play Your Recording
+                            </button>
+                        </div>
+
+                        <div class="pronunciation-rating" id="pronunciation-rating" style="display: none;">
+                            <h3>� Rate Your Child's Pronunciation</h3>
+                            <p class="rating-instruction">Listen to their recording and rate how well they pronounced the phrase</p>
+                            
+                            <div class="rating-stars">
+                                <span class="star" data-rating="1">★</span>
+                                <span class="star" data-rating="2">★</span>
+                                <span class="star" data-rating="3">★</span>
+                                <span class="star" data-rating="4">★</span>
+                                <span class="star" data-rating="5">★</span>
+                            </div>
+                            
+                            <div class="rating-labels">
+                                <span>Needs Practice</span>
+                                <span>Good</span>
+                                <span>Excellent!</span>
+                            </div>
+                            
+                            <div class="rating-metrics">
+                                <div class="metric-input">
+                                    <label>Tone Accuracy:</label>
+                                    <div class="slider-container">
+                                        <input type="range" id="tone-rating" min="0" max="100" value="50">
+                                        <span id="tone-value">50%</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="metric-input">
+                                    <label>Clarity:</label>
+                                    <div class="slider-container">
+                                        <input type="range" id="clarity-rating" min="0" max="100" value="50">
+                                        <span id="clarity-value">50%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <textarea id="pronunciation-notes" placeholder="Add notes about their pronunciation (optional)..."></textarea>
+                            
+                            <button class="btn-primary" id="save-rating-btn">Save Rating</button>
+                        </div>
+
+                        <div class="pronunciation-feedback" id="pronunciation-feedback" style="display: none;">
+                            <div class="feedback-summary">
+                                <h4>Previous Rating</h4>
+                                <div class="rating-display">
+                                    <div class="stars-display" id="stars-display">★★★★★</div>
+                                    <div class="metrics-display">
+                                        <div class="metric-row">
+                                            <span>Tone:</span>
+                                            <div class="metric-bar-small">
+                                                <div class="metric-fill-small" id="tone-display"></div>
+                                            </div>
+                                            <span id="tone-percent-display">0%</span>
+                                        </div>
+                                        <div class="metric-row">
+                                            <span>Clarity:</span>
+                                            <div class="metric-bar-small">
+                                                <div class="metric-fill-small" id="clarity-display"></div>
+                                            </div>
+                                            <span id="clarity-percent-display">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="notes-display" id="notes-display"></div>
+                            </div>
+                        </div>
+
+                        <div class="exercise-navigation">
+                            <button class="btn-secondary" id="prev-exercise">← Previous</button>
+                            <span class="exercise-counter" id="exercise-counter">1 / 5</span>
+                            <button class="btn-primary" id="next-exercise">Next →</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matching Game Tab -->
+        <div class="tab-content" id="game-tab">
+            <div class="game-section">
+                <h2>� Matching Card Game</h2>
+                <p class="section-description">Match Chinese characters with their English meanings. Click cards to hear pronunciation!</p>
+                
+                <div class="game-controls">
+                    <div class="game-info">
+                        <div class="game-stat">
+                            <span class="stat-label">Moves:</span>
+                            <span class="stat-value" id="move-count">0</span>
+                        </div>
+                        <div class="game-stat">
+                            <span class="stat-label">Matches:</span>
+                            <span class="stat-value" id="match-count">0 / 0</span>
+                        </div>
+                        <div class="game-stat">
+                            <span class="stat-label">Time:</span>
+                            <span class="stat-value" id="game-time">0:00</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary" id="new-game-btn">🎲 New Game</button>
+                </div>
+
+                <div class="difficulty-selector">
+                    <label>Difficulty:</label>
+                    <select id="difficulty-select">
+                        <option value="easy">Easy (3 pairs)</option>
+                        <option value="medium" selected>Medium (6 pairs)</option>
+                        <option value="hard">Hard (9 pairs)</option>
+                    </select>
+                </div>
+
+                <div class="game-board" id="game-board">
+                    <p class="empty-state">Click "New Game" to start playing!</p>
+                </div>
+
+                <div class="game-result" id="game-result" style="display: none;">
+                    <h3>🎉 Congratulations!</h3>
+                    <p>You completed the game in <span id="final-time">0:00</span> with <span id="final-moves">0</span> moves!</p>
+                    <button class="btn-primary" id="play-again-btn">Play Again</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Tab -->
+        <div class="tab-content" id="progress-tab">
+            <div class="progress-section">
+                <h2>📊 Learning Progress</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-exercises">0</div>
+                        <div class="stat-label">Total Exercises</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="avg-score">0%</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="lessons-completed">0</div>
+                        <div class="stat-label">Lessons Completed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="practice-time">0</div>
+                        <div class="stat-label">Minutes Practiced</div>
+                    </div>
+                </div>
+
+                <div class="progress-chart">
+                    <h3>Recent Performance</h3>
+                    <canvas id="progress-chart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="lesson-history">
+                    <h3>Lesson History</h3>
+                    <div class="history-list" id="history-list">
+                        <!-- History items will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modular JavaScript Architecture -->
+    <script type="module" src="js/main.js"></script>
+    
+    <!-- Legacy monolithic script (backup - can be removed after testing) -->
+    <!-- <script src="script.js"></script> -->
+</body>
+</html>

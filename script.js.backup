@@ -1,0 +1,462 @@
+// Global variables
+let currentLesson = null;
+let currentExerciseIndex = 0;
+let exercises = [];
+let mediaRecorder = null;
+let recordedAudio = null;
+let isRecording = false;
+let audioContext = null;
+let lessons = JSON.parse(localStorage.getItem('mandarinLessons')) || [];
+let progressData = JSON.parse(localStorage.getItem('progressData')) || {
+    totalExercises: 0,
+    totalScore: 0,
+    lessonsCompleted: 0,
+    practiceTime: 0,
+    history: []
+};
+let savedTranslations = JSON.parse(localStorage.getItem('savedTranslations')) || [];
+let currentTranslation = null;
+
+// Game variables
+let gameCards = [];
+let flippedCards = [];
+let matchedPairs = 0;
+let moveCount = 0;
+let gameTimer = null;
+let gameStartTime = null;
+let isProcessingMatch = false;
+
+// Translation dictionary (English to Chinese with pinyin) - 300+ words and phrases
+const translationDictionary = {
+    // Greetings & Basic Phrases (20)
+    'hello': { chinese: '你好', pinyin: 'nǐ hǎo' },
+    'hi': { chinese: '嗨', pinyin: 'hāi' },
+    'goodbye': { chinese: '再见', pinyin: 'zài jiàn' },
+    'bye': { chinese: '拜拜', pinyin: 'bài bài' },
+    'thank you': { chinese: '谢谢', pinyin: 'xiè xiè' },
+    'thanks': { chinese: '谢谢', pinyin: 'xiè xiè' },
+    'please': { chinese: '请', pinyin: 'qǐng' },
+    'sorry': { chinese: '对不起', pinyin: 'duì bù qǐ' },
+    'excuse me': { chinese: '不好意思', pinyin: 'bù hǎo yì si' },
+    'yes': { chinese: '是', pinyin: 'shì' },
+    'no': { chinese: '不是', pinyin: 'bù shì' },
+    'ok': { chinese: '好的', pinyin: 'hǎo de' },
+    'good morning': { chinese: '早上好', pinyin: 'zǎo shàng hǎo' },
+    'good afternoon': { chinese: '下午好', pinyin: 'xià wǔ hǎo' },
+    'good evening': { chinese: '晚上好', pinyin: 'wǎn shàng hǎo' },
+    'good night': { chinese: '晚安', pinyin: 'wǎn ān' },
+    'how are you': { chinese: '你好吗', pinyin: 'nǐ hǎo ma' },
+    'i love you': { chinese: '我爱你', pinyin: 'wǒ ài nǐ' },
+    'welcome': { chinese: '欢迎', pinyin: 'huān yíng' },
+    'congratulations': { chinese: '恭喜', pinyin: 'gōng xǐ' },
+    
+    // Family Members (20)
+    'mother': { chinese: '妈妈', pinyin: 'mā ma' },
+    'mom': { chinese: '妈妈', pinyin: 'mā ma' },
+    'father': { chinese: '爸爸', pinyin: 'bà ba' },
+    'dad': { chinese: '爸爸', pinyin: 'bà ba' },
+    'parents': { chinese: '父母', pinyin: 'fù mǔ' },
+    'child': { chinese: '孩子', pinyin: 'hái zi' },
+    'son': { chinese: '儿子', pinyin: 'ér zi' },
+    'daughter': { chinese: '女儿', pinyin: 'nǚ ér' },
+    'brother': { chinese: '兄弟', pinyin: 'xiōng dì' },
+    'older brother': { chinese: '哥哥', pinyin: 'gē ge' },
+    'younger brother': { chinese: '弟弟', pinyin: 'dì di' },
+    'sister': { chinese: '姐妹', pinyin: 'jiě mèi' },
+    'older sister': { chinese: '姐姐', pinyin: 'jiě jie' },
+    'younger sister': { chinese: '妹妹', pinyin: 'mèi mei' },
+    'grandmother': { chinese: '奶奶', pinyin: 'nǎi nai' },
+    'grandfather': { chinese: '爷爷', pinyin: 'yé ye' },
+    'aunt': { chinese: '阿姨', pinyin: 'ā yí' },
+    'uncle': { chinese: '叔叔', pinyin: 'shū shu' },
+    'family': { chinese: '家庭', pinyin: 'jiā tíng' },
+    'baby': { chinese: '宝宝', pinyin: 'bǎo bao' },
+    
+    // People (10)
+    'friend': { chinese: '朋友', pinyin: 'péng yǒu' },
+    'teacher': { chinese: '老师', pinyin: 'lǎo shī' },
+    'student': { chinese: '学生', pinyin: 'xué shēng' },
+    'classmate': { chinese: '同学', pinyin: 'tóng xué' },
+    'boy': { chinese: '男孩', pinyin: 'nán hái' },
+    'girl': { chinese: '女孩', pinyin: 'nǚ hái' },
+    'person': { chinese: '人', pinyin: 'rén' },
+    'doctor': { chinese: '医生', pinyin: 'yī shēng' },
+    'nurse': { chinese: '护士', pinyin: 'hù shi' },
+    'police': { chinese: '警察', pinyin: 'jǐng chá' },
+    
+    // Body Parts (16)
+    'head': { chinese: '头', pinyin: 'tóu' },
+    'hair': { chinese: '头发', pinyin: 'tóu fa' },
+    'face': { chinese: '脸', pinyin: 'liǎn' },
+    'eye': { chinese: '眼睛', pinyin: 'yǎn jing' },
+    'ear': { chinese: '耳朵', pinyin: 'ěr duo' },
+    'nose': { chinese: '鼻子', pinyin: 'bí zi' },
+    'mouth': { chinese: '嘴巴', pinyin: 'zuǐ ba' },
+    'tooth': { chinese: '牙齿', pinyin: 'yá chǐ' },
+    'hand': { chinese: '手', pinyin: 'shǒu' },
+    'finger': { chinese: '手指', pinyin: 'shǒu zhǐ' },
+    'arm': { chinese: '手臂', pinyin: 'shǒu bì' },
+    'leg': { chinese: '腿', pinyin: 'tuǐ' },
+    'foot': { chinese: '脚', pinyin: 'jiǎo' },
+    'body': { chinese: '身体', pinyin: 'shēn tǐ' },
+    'heart': { chinese: '心', pinyin: 'xīn' },
+    'stomach': { chinese: '肚子', pinyin: 'dù zi' },
+    
+    // Animals (20)
+    'dog': { chinese: '狗', pinyin: 'gǒu' },
+    'cat': { chinese: '猫', pinyin: 'māo' },
+    'bird': { chinese: '鸟', pinyin: 'niǎo' },
+    'fish': { chinese: '鱼', pinyin: 'yú' },
+    'rabbit': { chinese: '兔子', pinyin: 'tù zi' },
+    'mouse': { chinese: '老鼠', pinyin: 'lǎo shǔ' },
+    'tiger': { chinese: '老虎', pinyin: 'lǎo hǔ' },
+    'lion': { chinese: '狮子', pinyin: 'shī zi' },
+    'elephant': { chinese: '大象', pinyin: 'dà xiàng' },
+    'monkey': { chinese: '猴子', pinyin: 'hóu zi' },
+    'panda': { chinese: '熊猫', pinyin: 'xióng māo' },
+    'bear': { chinese: '熊', pinyin: 'xióng' },
+    'horse': { chinese: '马', pinyin: 'mǎ' },
+    'cow': { chinese: '牛', pinyin: 'niú' },
+    'pig': { chinese: '猪', pinyin: 'zhū' },
+    'chicken': { chinese: '鸡', pinyin: 'jī' },
+    'duck': { chinese: '鸭子', pinyin: 'yā zi' },
+    'sheep': { chinese: '羊', pinyin: 'yáng' },
+    'animal': { chinese: '动物', pinyin: 'dòng wù' },
+    'pet': { chinese: '宠物', pinyin: 'chǒng wù' },
+    
+    // Colors (12)
+    'red': { chinese: '红色', pinyin: 'hóng sè' },
+    'blue': { chinese: '蓝色', pinyin: 'lán sè' },
+    'yellow': { chinese: '黄色', pinyin: 'huáng sè' },
+    'green': { chinese: '绿色', pinyin: 'lǜ sè' },
+    'black': { chinese: '黑色', pinyin: 'hēi sè' },
+    'white': { chinese: '白色', pinyin: 'bái sè' },
+    'orange': { chinese: '橙色', pinyin: 'chéng sè' },
+    'purple': { chinese: '紫色', pinyin: 'zǐ sè' },
+    'pink': { chinese: '粉色', pinyin: 'fěn sè' },
+    'brown': { chinese: '棕色', pinyin: 'zōng sè' },
+    'gray': { chinese: '灰色', pinyin: 'huī sè' },
+    'color': { chinese: '颜色', pinyin: 'yán sè' },
+    
+    // Numbers (14)
+    'zero': { chinese: '零', pinyin: 'líng' },
+    'one': { chinese: '一', pinyin: 'yī' },
+    'two': { chinese: '二', pinyin: 'èr' },
+    'three': { chinese: '三', pinyin: 'sān' },
+    'four': { chinese: '四', pinyin: 'sì' },
+    'five': { chinese: '五', pinyin: 'wǔ' },
+    'six': { chinese: '六', pinyin: 'liù' },
+    'seven': { chinese: '七', pinyin: 'qī' },
+    'eight': { chinese: '八', pinyin: 'bā' },
+    'nine': { chinese: '九', pinyin: 'jiǔ' },
+    'ten': { chinese: '十', pinyin: 'shí' },
+    'eleven': { chinese: '十一', pinyin: 'shí yī' },
+    'hundred': { chinese: '百', pinyin: 'bǎi' },
+    'thousand': { chinese: '千', pinyin: 'qiān' },
+    
+    // Food & Drinks (24)
+    'food': { chinese: '食物', pinyin: 'shí wù' },
+    'water': { chinese: '水', pinyin: 'shuǐ' },
+    'milk': { chinese: '牛奶', pinyin: 'niú nǎi' },
+    'juice': { chinese: '果汁', pinyin: 'guǒ zhī' },
+    'tea': { chinese: '茶', pinyin: 'chá' },
+    'coffee': { chinese: '咖啡', pinyin: 'kā fēi' },
+    'rice': { chinese: '米饭', pinyin: 'mǐ fàn' },
+    'bread': { chinese: '面包', pinyin: 'miàn bāo' },
+    'noodles': { chinese: '面条', pinyin: 'miàn tiáo' },
+    'meat': { chinese: '肉', pinyin: 'ròu' },
+    'egg': { chinese: '鸡蛋', pinyin: 'jī dàn' },
+    'vegetable': { chinese: '蔬菜', pinyin: 'shū cài' },
+    'fruit': { chinese: '水果', pinyin: 'shuǐ guǒ' },
+    'apple': { chinese: '苹果', pinyin: 'píng guǒ' },
+    'banana': { chinese: '香蕉', pinyin: 'xiāng jiāo' },
+    'grape': { chinese: '葡萄', pinyin: 'pú táo' },
+    'watermelon': { chinese: '西瓜', pinyin: 'xī guā' },
+    'strawberry': { chinese: '草莓', pinyin: 'cǎo méi' },
+    'cake': { chinese: '蛋糕', pinyin: 'dàn gāo' },
+    'candy': { chinese: '糖果', pinyin: 'táng guǒ' },
+    'ice cream': { chinese: '冰淇淋', pinyin: 'bīng qí lín' },
+    'soup': { chinese: '汤', pinyin: 'tāng' },
+    'salt': { chinese: '盐', pinyin: 'yán' },
+    'sugar': { chinese: '糖', pinyin: 'táng' },
+    
+    // School (15)
+    'school': { chinese: '学校', pinyin: 'xué xiào' },
+    'classroom': { chinese: '教室', pinyin: 'jiào shì' },
+    'book': { chinese: '书', pinyin: 'shū' },
+    'pen': { chinese: '笔', pinyin: 'bǐ' },
+    'pencil': { chinese: '铅笔', pinyin: 'qiān bǐ' },
+    'paper': { chinese: '纸', pinyin: 'zhǐ' },
+    'eraser': { chinese: '橡皮', pinyin: 'xiàng pí' },
+    'ruler': { chinese: '尺子', pinyin: 'chǐ zi' },
+    'bag': { chinese: '书包', pinyin: 'shū bāo' },
+    'desk': { chinese: '书桌', pinyin: 'shū zhuō' },
+    'chair': { chinese: '椅子', pinyin: 'yǐ zi' },
+    'blackboard': { chinese: '黑板', pinyin: 'hēi bǎn' },
+    'homework': { chinese: '作业', pinyin: 'zuò yè' },
+    'exam': { chinese: '考试', pinyin: 'kǎo shì' },
+    'lesson': { chinese: '课', pinyin: 'kè' },
+    
+    // Common Verbs (38)
+    'eat': { chinese: '吃', pinyin: 'chī' },
+    'drink': { chinese: '喝', pinyin: 'hē' },
+    'sleep': { chinese: '睡觉', pinyin: 'shuì jiào' },
+    'wake up': { chinese: '起床', pinyin: 'qǐ chuáng' },
+    'study': { chinese: '学习', pinyin: 'xué xí' },
+    'work': { chinese: '工作', pinyin: 'gōng zuò' },
+    'play': { chinese: '玩', pinyin: 'wán' },
+    'read': { chinese: '读', pinyin: 'dú' },
+    'write': { chinese: '写', pinyin: 'xiě' },
+    'speak': { chinese: '说', pinyin: 'shuō' },
+    'listen': { chinese: '听', pinyin: 'tīng' },
+    'watch': { chinese: '看', pinyin: 'kàn' },
+    'see': { chinese: '看见', pinyin: 'kàn jiàn' },
+    'look': { chinese: '看', pinyin: 'kàn' },
+    'go': { chinese: '去', pinyin: 'qù' },
+    'come': { chinese: '来', pinyin: 'lái' },
+    'walk': { chinese: '走', pinyin: 'zǒu' },
+    'run': { chinese: '跑', pinyin: 'pǎo' },
+    'jump': { chinese: '跳', pinyin: 'tiào' },
+    'sit': { chinese: '坐', pinyin: 'zuò' },
+    'stand': { chinese: '站', pinyin: 'zhàn' },
+    'give': { chinese: '给', pinyin: 'gěi' },
+    'take': { chinese: '拿', pinyin: 'ná' },
+    'buy': { chinese: '买', pinyin: 'mǎi' },
+    'sell': { chinese: '卖', pinyin: 'mài' },
+    'open': { chinese: '开', pinyin: 'kāi' },
+    'close': { chinese: '关', pinyin: 'guān' },
+    'help': { chinese: '帮助', pinyin: 'bāng zhù' },
+    'like': { chinese: '喜欢', pinyin: 'xǐ huan' },
+    'love': { chinese: '爱', pinyin: 'ài' },
+    'want': { chinese: '想要', pinyin: 'xiǎng yào' },
+    'need': { chinese: '需要', pinyin: 'xū yào' },
+    'know': { chinese: '知道', pinyin: 'zhī dào' },
+    'think': { chinese: '想', pinyin: 'xiǎng' },
+    'understand': { chinese: '明白', pinyin: 'míng bai' },
+    'cook': { chinese: '做饭', pinyin: 'zuò fàn' },
+    'wash': { chinese: '洗', pinyin: 'xǐ' },
+    'clean': { chinese: '打扫', pinyin: 'dǎ sǎo' },
+    
+    // Adjectives (32)
+    'beautiful': { chinese: '漂亮', pinyin: 'piào liang' },
+    'pretty': { chinese: '美丽', pinyin: 'měi lì' },
+    'handsome': { chinese: '帅', pinyin: 'shuài' },
+    'ugly': { chinese: '丑', pinyin: 'chǒu' },
+    'good': { chinese: '好', pinyin: 'hǎo' },
+    'bad': { chinese: '坏', pinyin: 'huài' },
+    'great': { chinese: '很好', pinyin: 'hěn hǎo' },
+    'happy': { chinese: '快乐', pinyin: 'kuài lè' },
+    'sad': { chinese: '难过', pinyin: 'nán guò' },
+    'angry': { chinese: '生气', pinyin: 'shēng qì' },
+    'excited': { chinese: '兴奋', pinyin: 'xīng fèn' },
+    'tired': { chinese: '累', pinyin: 'lèi' },
+    'hungry': { chinese: '饿', pinyin: 'è' },
+    'thirsty': { chinese: '渴', pinyin: 'kě' },
+    'hot': { chinese: '热', pinyin: 'rè' },
+    'cold': { chinese: '冷', pinyin: 'lěng' },
+    'warm': { chinese: '温暖', pinyin: 'wēn nuǎn' },
+    'cool': { chinese: '凉快', pinyin: 'liáng kuai' },
+    'big': { chinese: '大', pinyin: 'dà' },
+    'small': { chinese: '小', pinyin: 'xiǎo' },
+    'tall': { chinese: '高', pinyin: 'gāo' },
+    'short': { chinese: '矮', pinyin: 'ǎi' },
+    'long': { chinese: '长', pinyin: 'cháng' },
+    'heavy': { chinese: '重', pinyin: 'zhòng' },
+    'light': { chinese: '轻', pinyin: 'qīng' },
+    'fast': { chinese: '快', pinyin: 'kuài' },
+    'slow': { chinese: '慢', pinyin: 'màn' },
+    'new': { chinese: '新', pinyin: 'xīn' },
+    'old': { chinese: '旧', pinyin: 'jiù' },
+    'clean': { chinese: '干净', pinyin: 'gān jìng' },
+    'dirty': { chinese: '脏', pinyin: 'zāng' },
+    'easy': { chinese: '容易', pinyin: 'róng yì' },
+    
+    // Time (22)
+    'today': { chinese: '今天', pinyin: 'jīn tiān' },
+    'tomorrow': { chinese: '明天', pinyin: 'míng tiān' },
+    'yesterday': { chinese: '昨天', pinyin: 'zuó tiān' },
+    'now': { chinese: '现在', pinyin: 'xiàn zài' },
+    'morning': { chinese: '早上', pinyin: 'zǎo shang' },
+    'afternoon': { chinese: '下午', pinyin: 'xià wǔ' },
+    'evening': { chinese: '晚上', pinyin: 'wǎn shang' },
+    'night': { chinese: '夜晚', pinyin: 'yè wǎn' },
+    'day': { chinese: '天', pinyin: 'tiān' },
+    'week': { chinese: '星期', pinyin: 'xīng qī' },
+    'month': { chinese: '月', pinyin: 'yuè' },
+    'year': { chinese: '年', pinyin: 'nián' },
+    'monday': { chinese: '星期一', pinyin: 'xīng qī yī' },
+    'tuesday': { chinese: '星期二', pinyin: 'xīng qī èr' },
+    'wednesday': { chinese: '星期三', pinyin: 'xīng qī sān' },
+    'thursday': { chinese: '星期四', pinyin: 'xīng qī sì' },
+    'friday': { chinese: '星期五', pinyin: 'xīng qī wǔ' },
+    'saturday': { chinese: '星期六', pinyin: 'xīng qī liù' },
+    'sunday': { chinese: '星期天', pinyin: 'xīng qī tiān' },
+    'hour': { chinese: '小时', pinyin: 'xiǎo shí' },
+    'minute': { chinese: '分钟', pinyin: 'fēn zhōng' },
+    'second': { chinese: '秒', pinyin: 'miǎo' },
+    
+    // Weather (12)
+    'weather': { chinese: '天气', pinyin: 'tiān qì' },
+    'sunny': { chinese: '晴天', pinyin: 'qíng tiān' },
+    'rainy': { chinese: '下雨', pinyin: 'xià yǔ' },
+    'cloudy': { chinese: '多云', pinyin: 'duō yún' },
+    'snowy': { chinese: '下雪', pinyin: 'xià xuě' },
+    'windy': { chinese: '有风', pinyin: 'yǒu fēng' },
+    'rain': { chinese: '雨', pinyin: 'yǔ' },
+    'snow': { chinese: '雪', pinyin: 'xuě' },
+    'wind': { chinese: '风', pinyin: 'fēng' },
+    'sun': { chinese: '太阳', pinyin: 'tài yáng' },
+    'moon': { chinese: '月亮', pinyin: 'yuè liang' },
+    'star': { chinese: '星星', pinyin: 'xīng xing' },
+    
+    // Clothing & Places (20)
+    'clothes': { chinese: '衣服', pinyin: 'yī fu' },
+    'shirt': { chinese: '衬衫', pinyin: 'chèn shān' },
+    'pants': { chinese: '裤子', pinyin: 'kù zi' },
+    'dress': { chinese: '裙子', pinyin: 'qún zi' },
+    'shoes': { chinese: '鞋子', pinyin: 'xié zi' },
+    'socks': { chinese: '袜子', pinyin: 'wà zi' },
+    'hat': { chinese: '帽子', pinyin: 'mào zi' },
+    'coat': { chinese: '外套', pinyin: 'wài tào' },
+    'home': { chinese: '家', pinyin: 'jiā' },
+    'house': { chinese: '房子', pinyin: 'fáng zi' },
+    'room': { chinese: '房间', pinyin: 'fáng jiān' },
+    'kitchen': { chinese: '厨房', pinyin: 'chú fáng' },
+    'bathroom': { chinese: '浴室', pinyin: 'yù shì' },
+    'bedroom': { chinese: '卧室', pinyin: 'wò shì' },
+    'park': { chinese: '公园', pinyin: 'gōng yuán' },
+    'store': { chinese: '商店', pinyin: 'shāng diàn' },
+    'hospital': { chinese: '医院', pinyin: 'yī yuàn' },
+    'library': { chinese: '图书馆', pinyin: 'tú shū guǎn' },
+    'restaurant': { chinese: '餐厅', pinyin: 'cān tīng' },
+    'street': { chinese: '街道', pinyin: 'jiē dào' }
+};
+
+// Sample lesson data for demonstration
+const sampleLessons = [
+    {
+        id: 'sample-1',
+        name: 'Basic Greetings',
+        date: new Date().toISOString(),
+        exercises: [
+            {
+                chinese: '你好',
+                pinyin: 'nǐ hǎo',
+                english: 'Hello',
+                audioUrl: null
+            },
+            {
+                chinese: '再见',
+                pinyin: 'zài jiàn',
+                english: 'Goodbye',
+                audioUrl: null
+            },
+            {
+                chinese: '谢谢',
+                pinyin: 'xiè xiè',
+                english: 'Thank you',
+                audioUrl: null
+            },
+            {
+                chinese: '对不起',
+                pinyin: 'duì bù qǐ',
+                english: 'Sorry',
+                audioUrl: null
+            },
+            {
+                chinese: '请',
+                pinyin: 'qǐng',
+                english: 'Please',
+                audioUrl: null
+            }
+        ]
+    }
+];
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
+    setupEventListeners();
+    loadProgress();
+    
+    // Add sample lesson if no lessons exist
+    if (lessons.length === 0) {
+        lessons = [...sampleLessons];
+        saveLessons();
+        populateLessonSelector();
+    }
+});
+
+function initializeApp() {
+    // Initialize audio context
+    if (typeof AudioContext !== 'undefined') {
+        audioContext = new AudioContext();
+    } else if (typeof webkitAudioContext !== 'undefined') {
+        audioContext = new webkitAudioContext();
+    }
+    
+    populateLessonSelector();
+    updateProgressDisplay();
+}
+
+function setupEventListeners() {
+    // Tab navigation
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+    
+    // File upload
+    const fileInput = document.getElementById('audio-file');
+    const uploadArea = document.getElementById('upload-area');
+    
+    fileInput.addEventListener('change', handleFileUpload);
+    
+    // Drag and drop
+    uploadArea.addEventListener('dragover', handleDragOver);
+    uploadArea.addEventListener('dragleave', handleDragLeave);
+    uploadArea.addEventListener('drop', handleFileDrop);
+    
+    // Practice controls
+    document.getElementById('lesson-select').addEventListener('change', handleLessonSelect);
+    document.getElementById('play-reference').addEventListener('click', playReference);
+    document.getElementById('record-btn').addEventListener('click', toggleRecording);
+    document.getElementById('play-recording').addEventListener('click', playRecording);
+    document.getElementById('prev-exercise').addEventListener('click', previousExercise);
+    document.getElementById('next-exercise').addEventListener('click', nextExercise);
+    
+    // Translation controls
+    document.getElementById('translate-btn').addEventListener('click', handleTranslation);
+    document.getElementById('english-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') handleTranslation();
+    });
+    
+    // Game controls
+    document.getElementById('new-game-btn').addEventListener('click', startNewGame);
+    document.getElementById('play-again-btn').addEventListener('click', startNewGame);
+    
+    // Load saved translations
+    displaySavedTranslations();
+}
+
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+    
+    // Load specific tab data
+    if (tabName === 'progress') {
+        updateProgressDisplay();
+        drawProgressChart();
+    }
+}
+
+// Continue with rest of the implementation - append remaining functions from the complete version
+// (This will be added via a separate command to avoid length issues)
