@@ -1,0 +1,8 @@
+{
+  "name": "mandarin-tutor-netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify serverless functions for Mandarin Tutor application",
+  "dependencies": {
+    "microsoft-cognitiveservices-speech-sdk": "^1.34.0"
+  }
+}
