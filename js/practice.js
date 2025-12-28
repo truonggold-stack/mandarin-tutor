@@ -405,3 +405,26 @@ export async function assessPronunciationWithAzure(audioBlob, referenceText) {
         return generatePronunciationScore();
     }
 }
+// Save pronunciation rating
+// @param {Object} rating - { stars, tone, clarity, notes }
+// @returns {boolean} True if saved successfully
+export function savePronunciationRating(rating) {
+    // currentLesson, currentExerciseIndex and progressData are module-level vars in practice.js
+    if (!currentLesson) return false;
+
+    // addExerciseRating is already imported from lessons.js at top of the file
+    const success = addExerciseRating(
+        currentLesson.id,
+        currentExerciseIndex,
+        rating
+    );
+
+    if (success) {
+        // Ensure progressData fields exist
+        progressData.totalExercises = (progressData.totalExercises || 0) + 1;
+        progressData.totalScore = (progressData.totalScore || 0) + ((rating.stars || 0) / 5) * 100;
+        saveProgress(progressData); // saveProgress is already imported in practice.js
+    }
+
+    return success;
+}
