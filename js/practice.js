@@ -379,13 +379,20 @@ function writeString(view, offset, string) {
 
 /**
  * Convert ArrayBuffer to base64 string
+ * Uses chunked approach to avoid call stack overflow with large buffers
  * @param {ArrayBuffer} buffer - Buffer to convert
  * @returns {string} Base64 encoded string
  */
 function arrayBufferToBase64(buffer) {
     const bytes = new Uint8Array(buffer);
-    // Use Array.from for better performance with large buffers
-    const binary = String.fromCharCode.apply(null, bytes);
+    const CHUNK_SIZE = 0x8000; // 32KB chunks to avoid call stack limits
+    let binary = '';
+    
+    for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+        const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, bytes.length));
+        binary += String.fromCharCode.apply(null, chunk);
+    }
+    
     return btoa(binary);
 }
 
