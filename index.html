@@ -25,62 +25,8 @@
             <button class="tab-btn active" data-tab="translate">Translate</button>
             <button class="tab-btn" data-tab="practice">Practice</button>
             <button class="tab-btn" data-tab="game">Matching Game</button>
-            <button class="tab-btn" data-tab="upload">Upload Lesson</button>
             <button class="tab-btn" data-tab="progress">Progress</button>
         </nav>
-
-        <!-- Upload Tab -->
-        <div class="tab-content" id="upload-tab">
-            <div class="upload-section">
-                <h2>📚 Create Custom Lessons</h2>
-                <p class="section-description">Create custom lessons from your saved translations on the Home tab.</p>
-                
-                <div class="empty-state" style="padding: 3rem; text-align: center;">
-                    <p style="font-size: 1.2rem; color: #666;">
-                        💡 Go to the <strong>Home</strong> tab to add translations, then click 
-                        <strong>"📚 Create Lesson"</strong> to build a custom lesson.
-                    </p>
-                </div>
-
-                <!-- Detected Content Section -->
-                <div class="detected-content" id="detected-content" style="display: none;">
-                    <h3>🎯 Detected Content - Verify & Edit</h3>
-                    <p class="section-description">Review detected phrases and their quality ratings. Edit as needed before creating your lesson.</p>
-                    
-                    <div class="detected-items" id="detected-items">
-                        <!-- Detected items will be populated here -->
-                    </div>
-                </div>
-
-                <!-- Lesson Builder -->
-                <div class="lesson-builder" id="lesson-builder" style="display: none;">
-                    <h3>🏗️ Build Your Lesson</h3>
-                    <p class="section-description">Drag items from verified content to create your custom lesson.</p>
-                    
-                    <div class="builder-grid">
-                        <div class="builder-column">
-                            <h4>Available Items</h4>
-                            <div class="available-items" id="available-items">
-                                <!-- Available items will be populated here -->
-                            </div>
-                        </div>
-                        
-                        <div class="builder-column">
-                            <h4>Lesson Content</h4>
-                            <div class="lesson-name-input">
-                                <input type="text" id="lesson-name" placeholder="Enter lesson name (e.g., 'Basic Greetings')">
-                            </div>
-                            <div class="lesson-items" id="lesson-items">
-                                <p class="empty-state">Drag items here to build your lesson</p>
-                            </div>
-                            <button class="btn-primary" id="create-lesson-btn" style="display: none;">
-                                ✅ Create Lesson
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Translate Tab -->
         <div class="tab-content active" id="translate-tab">
