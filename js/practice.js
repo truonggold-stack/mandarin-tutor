@@ -12,6 +12,10 @@ let currentExerciseIndex = 0;
 let exercises = [];
 let progressData = null;
 
+// Audio conversion constants
+const TARGET_SAMPLE_RATE = 16000; // Azure Speech SDK preferred sample rate (16kHz)
+const AUDIO_NORMALIZATION_VOLUME = 0.8; // Prevent clipping in WAV conversion
+
 /**
  * Initialize practice module
  */
@@ -274,11 +278,10 @@ async function blobToWav16kBase64(blob) {
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
         
         // Create OfflineAudioContext to resample to 16kHz mono
-        const targetSampleRate = 16000;
         const offlineContext = new OfflineAudioContext(
             1, // mono
-            audioBuffer.duration * targetSampleRate,
-            targetSampleRate
+            audioBuffer.duration * TARGET_SAMPLE_RATE,
+            TARGET_SAMPLE_RATE
         );
         
         // Create buffer source
@@ -351,10 +354,9 @@ function encodeWAV(audioBuffer) {
     writeString(view, offset, 'data'); offset += 4;
     view.setUint32(offset, dataSize, true); offset += 4;
     
-    // Write PCM samples
-    const volume = 0.8; // Prevent clipping
+    // Write PCM samples with normalization to prevent clipping
     for (let i = 0; i < numSamples; i++) {
-        const sample = Math.max(-1, Math.min(1, samples[i] * volume));
+        const sample = Math.max(-1, Math.min(1, samples[i] * AUDIO_NORMALIZATION_VOLUME));
         const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
         view.setInt16(offset, int16, true);
         offset += 2;
@@ -382,10 +384,8 @@ function writeString(view, offset, string) {
  */
 function arrayBufferToBase64(buffer) {
     const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
+    // Use Array.from for better performance with large buffers
+    const binary = String.fromCharCode.apply(null, bytes);
     return btoa(binary);
 }
 
