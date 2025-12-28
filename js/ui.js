@@ -236,6 +236,9 @@ export function displayPronunciationProgress() {
         console.log('🎨 UI received progress data:', progressData.length, 'lessons');
         progressData.forEach((lesson, i) => {
             console.log(`  Lesson ${i+1}: ${lesson.lessonName} with ${lesson.tasks.length} task entries`);
+            lesson.tasks.forEach((task, j) => {
+                console.log(`    Task ${j+1}: "${task.task}" - Attempt #${task.attemptNumber} - ${task.score}%`);
+            });
         });
         
         if (!progressData || progressData.length === 0) {
@@ -245,6 +248,7 @@ export function displayPronunciationProgress() {
         
         // Build the HTML for each lesson
         const lessonsHtml = progressData.map(lesson => {
+            console.log(`🔨 Building HTML for lesson: ${lesson.lessonName} with ${lesson.tasks.length} tasks`);
             const tasksHtml = lesson.tasks.map(task => {
                 const date = new Date(task.date).toLocaleDateString();
                 const time = new Date(task.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -280,6 +284,8 @@ export function displayPronunciationProgress() {
                     </tr>
                 `;
             }).join('');
+            
+            console.log(`  ✅ Generated ${lesson.tasks.length} task rows, tasksHtml length: ${tasksHtml.length} chars`);
             
             return `
                 <div class="pronunciation-lesson-group">
