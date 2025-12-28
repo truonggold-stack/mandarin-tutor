@@ -420,15 +420,13 @@ export function savePronunciationRating(rating) {
     );
 
     if (success) {
-        // Ensure progressData is loaded
-        if (!progressData) {
-            progressData = loadProgress();
-        }
+        // Reload progressData to ensure we have the latest data (including pronunciation scores just saved)
+        progressData = loadProgress();
         
         // Ensure progressData fields exist
         progressData.totalExercises = (progressData.totalExercises || 0) + 1;
         progressData.totalScore = (progressData.totalScore || 0) + ((rating.stars || 0) / 5) * 100;
-        saveProgress(progressData); // saveProgress is already imported in practice.js
+        saveProgress(progressData);
     }
 
     return success;
