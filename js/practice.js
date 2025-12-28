@@ -428,3 +428,21 @@ export function savePronunciationRating(rating) {
 
     return success;
 }
+
+/**
+ * Get current lesson info for score tracking
+ * @returns {Object|null} Current lesson and exercise info
+ */
+export function getCurrentLessonInfo() {
+    if (!currentLesson || !exercises || currentExerciseIndex >= exercises.length) {
+        return null;
+    }
+    
+    const exercise = exercises[currentExerciseIndex];
+    return {
+        lessonId: currentLesson.id,
+        lessonName: currentLesson.name,
+        exerciseIndex: currentExerciseIndex,
+        task: exercise.chinese || exercise.pinyin || 'Unknown task'
+    };
+}

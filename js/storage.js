@@ -93,7 +93,8 @@ export function loadProgress() {
             gamesPlayed: 0,
             totalGameScore: 0,
             history: [],
-            gameHistory: []
+            gameHistory: [],
+            pronunciationScores: []
         };
     } catch (error) {
         console.error('Failed to load progress:', error);
@@ -105,7 +106,8 @@ export function loadProgress() {
             gamesPlayed: 0,
             totalGameScore: 0,
             history: [],
-            gameHistory: []
+            gameHistory: [],
+            pronunciationScores: []
         };
     }
 }
@@ -205,6 +207,138 @@ export function loadGames() {
         return data ? JSON.parse(data) : [];
     } catch (error) {
         console.error('Failed to load games:', error);
+        return [];
+    }
+}
+
+/**
+ * Save pronunciation score to progress
+ * @param {Object} scoreData - Score data with lesson, task, and score info
+ */
+export function savePronunciationScore(scoreData) {
+    try {
+        const progress = loadProgress();
+        
+        // Ensure pronunciationScores array exists
+        progress.pronunciationScores = progress.pronunciationScores || [];
+        
+        // Add new score entry
+        progress.pronunciationScores.push({
+            date: new Date().toISOString(),
+            lessonId: scoreData.lessonId,
+            lessonName: scoreData.lessonName,
+            task: scoreData.task,
+            score: scoreData.score,
+            stars: scoreData.stars,
+            toneScore: scoreData.toneScore,
+            clarityScore: scoreData.clarityScore
+        });
+        
+        // Keep only last 100 scores to avoid storage bloat
+        if (progress.pronunciationScores.length > 100) {
+            progress.pronunciationScores = progress.pronunciationScores.slice(-100);
+        }
+        
+        saveProgress(progress);
+        return true;
+    } catch (error) {
+        console.error('Failed to save pronunciation score:', error);
+        return false;
+    }
+}
+
+/**
+ * Get pronunciation scores grouped by lesson
+ * Returns last 10 lessons with their tasks
+ * @returns {Array} Array of lessons with their task scores
+ */
+export function getPronunciationProgressByLesson() {
+    try {
+        const progress = loadProgress();
+        const scores = progress.pronunciationScores || [];
+        
+        if (scores.length === 0) return [];
+        
+        // Group scores by lesson
+        const lessonMap = new Map();
+        
+        scores.forEach(score => {
+            const key = score.lessonId;
+            if (!lessonMap.has(key)) {
+                lessonMap.set(key, {
+                    lessonId: score.lessonId,
+                    lessonName: score.lessonName,
+                    lastActivityDate: score.date,
+                    tasks: new Map()
+                });
+            }
+            
+            const lesson = lessonMap.get(key);
+            
+            // Update last activity date if this is more recent
+            if (new Date(score.date) > new Date(lesson.lastActivityDate)) {
+                lesson.lastActivityDate = score.date;
+            }
+            
+            // Group by task within lesson
+            const taskKey = score.task;
+            if (!lesson.tasks.has(taskKey)) {
+                lesson.tasks.set(taskKey, []);
+            }
+            lesson.tasks.get(taskKey).push(score);
+        });
+        
+        // Convert to array and get last 10 lessons by activity date
+        const lessonArray = Array.from(lessonMap.values())
+            .sort((a, b) => new Date(b.lastActivityDate) - new Date(a.lastActivityDate))
+            .slice(0, 10);
+        
+        // Process each lesson's tasks
+        const result = [];
+        lessonArray.forEach(lesson => {
+            const taskArray = [];
+            
+            lesson.tasks.forEach((scoreHistory, taskText) => {
+                // Sort by date, most recent first
+                const sortedScores = scoreHistory.sort((a, b) => 
+                    new Date(b.date) - new Date(a.date)
+                );
+                
+                const mostRecent = sortedScores[0];
+                const previous = sortedScores.length > 1 ? sortedScores[1] : null;
+                
+                let improvement = null;
+                if (previous) {
+                    const scoreDiff = mostRecent.score - previous.score;
+                    improvement = scoreDiff > 0 ? 'improved' : 
+                                  scoreDiff < 0 ? 'declined' : 'same';
+                }
+                
+                taskArray.push({
+                    task: taskText,
+                    date: mostRecent.date,
+                    score: mostRecent.score,
+                    stars: mostRecent.stars,
+                    toneScore: mostRecent.toneScore,
+                    clarityScore: mostRecent.clarityScore,
+                    improvement: improvement,
+                    previousScore: previous ? previous.score : null
+                });
+            });
+            
+            // Sort tasks by most recent date
+            taskArray.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            result.push({
+                lessonId: lesson.lessonId,
+                lessonName: lesson.lessonName,
+                tasks: taskArray
+            });
+        });
+        
+        return result;
+    } catch (error) {
+        console.error('Failed to get pronunciation progress:', error);
         return [];
     }
 }

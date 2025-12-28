@@ -5,7 +5,7 @@ import { sampleLessons } from './config.js';
 import { initializeAudio, speakChinese, speakEnglish } from './audio.js';
 import { initializeTranslation, translateWord, addTranslation, getTranslations, clearTranslations, deleteTranslation } from './translation.js';
 import { initializeLessons, createLesson, getLessons, getLesson, deleteLesson } from './lessons.js';
-import { initializePractice, loadLesson as loadPracticeLesson, getCurrentExercise, nextExercise, previousExercise, playReference, startPracticeRecording, stopPracticeRecording, isPracticeRecording, assessPronunciationWithAzure, generatePronunciationScore, savePronunciationRating } from './practice.js';
+import { initializePractice, loadLesson as loadPracticeLesson, getCurrentExercise, nextExercise, previousExercise, playReference, startPracticeRecording, stopPracticeRecording, isPracticeRecording, assessPronunciationWithAzure, generatePronunciationScore, savePronunciationRating, getCurrentLessonInfo } from './practice.js';
 import { startNewGame, startCustomGame, getGameState, shuffleArray, handleDrop, handleDragStart, playPairAudio, endGame, isGameActive } from './game.js';
 import { switchTab, displayTranslationResult, displaySavedTranslations, displayLessonList, populateLessonSelector, displayExercise, toggleExerciseContainer, updateProgressDisplay, displaySavedGames, renderGameBoard, updateGameStats, hideGameResult, showGameResult } from './ui.js';
 import { saveGames, loadGames, saveProgress, loadProgress, saveGameResult } from './storage.js';
@@ -629,7 +629,24 @@ function displayPronunciationResults(result) {
                 notes: result.feedback
             };
             
+            // Save to lesson ratings (existing functionality)
             if (savePronunciationRating(rating)) {
+                // Also save to pronunciation progress tracking
+                const lessonInfo = getCurrentLessonInfo();
+                if (lessonInfo) {
+                    import('./storage.js').then(({ savePronunciationScore }) => {
+                        savePronunciationScore({
+                            lessonId: lessonInfo.lessonId,
+                            lessonName: lessonInfo.lessonName,
+                            task: lessonInfo.task,
+                            score: Math.round((result.stars / 5) * 100),
+                            stars: result.stars,
+                            toneScore: result.toneScore,
+                            clarityScore: result.clarityScore
+                        });
+                    });
+                }
+                
                 alert('✅ Assessment saved!');
                 ratingDiv.style.display = 'none';
             } else {

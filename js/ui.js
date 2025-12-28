@@ -148,6 +148,9 @@ export function updateProgressDisplay(progressData) {
     
     // Display game history
     displayGameHistory(progressData.gameHistory || []);
+    
+    // Display pronunciation progress
+    displayPronunciationProgress();
 }
 
 /**
@@ -216,6 +219,89 @@ export function hideGameResult() {
  */
 export function showMessage(type, message) {
     alert(message); // Simple implementation, can be enhanced
+}
+
+/**
+ * Display pronunciation progress table
+ */
+export function displayPronunciationProgress() {
+    const container = document.getElementById('pronunciation-progress-container');
+    
+    if (!container) return;
+    
+    // Import the function dynamically to avoid circular dependencies
+    import('./storage.js').then(({ getPronunciationProgressByLesson }) => {
+        const progressData = getPronunciationProgressByLesson();
+        
+        if (!progressData || progressData.length === 0) {
+            container.innerHTML = '<p class="empty-state">No pronunciation practice sessions yet!</p>';
+            return;
+        }
+        
+        // Build the HTML for each lesson
+        const lessonsHtml = progressData.map(lesson => {
+            const tasksHtml = lesson.tasks.map(task => {
+                const date = new Date(task.date).toLocaleDateString();
+                const time = new Date(task.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                let improvementHtml = '';
+                if (task.improvement === 'improved') {
+                    improvementHtml = `<span style="color: #22c55e;">↗ Improved (+${task.score - task.previousScore}%)</span>`;
+                } else if (task.improvement === 'declined') {
+                    improvementHtml = `<span style="color: #ef4444;">↘ Declined (${task.score - task.previousScore}%)</span>`;
+                } else if (task.improvement === 'same') {
+                    improvementHtml = `<span style="color: #64748b;">→ Same</span>`;
+                }
+                
+                const starsHtml = '★'.repeat(task.stars) + '☆'.repeat(5 - task.stars);
+                
+                return `
+                    <tr>
+                        <td>${date}<br><span style="font-size: 0.85rem; color: #666;">${time}</span></td>
+                        <td>${task.task}</td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                                <div style="color: #f59e0b;">${starsHtml}</div>
+                                <div style="font-size: 0.9rem;">
+                                    <span style="color: #666;">Tone:</span> ${task.toneScore}% | 
+                                    <span style="color: #666;">Clarity:</span> ${task.clarityScore}%
+                                </div>
+                            </div>
+                        </td>
+                        <td>${improvementHtml}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            return `
+                <div class="pronunciation-lesson-group">
+                    <h4 class="pronunciation-lesson-title">${lesson.lessonName}</h4>
+                    <table class="pronunciation-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Task</th>
+                                <th>Score</th>
+                                <th>Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tasksHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = `
+            <div class="pronunciation-progress-section">
+                ${lessonsHtml}
+            </div>
+        `;
+    }).catch(error => {
+        console.error('Failed to display pronunciation progress:', error);
+        container.innerHTML = '<p class="empty-state">Error loading pronunciation progress</p>';
+    });
 }
 
 /**
