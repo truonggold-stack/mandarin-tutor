@@ -237,12 +237,19 @@ export function savePronunciationScore(scoreData) {
         
         progress.pronunciationScores.push(newScoreEntry);
         
+        console.log('💾 Saving new pronunciation score:', newScoreEntry);
+        console.log('💾 Total scores in array BEFORE save:', progress.pronunciationScores.length);
+        
         // Keep only last 50 scores to avoid storage bloat
         if (progress.pronunciationScores.length > 50) {
             progress.pronunciationScores = progress.pronunciationScores.slice(-50);
         }
         
         saveProgress(progress);
+        
+        console.log('💾 Score saved successfully. Total scores now:', progress.pronunciationScores.length);
+        console.log('💾 All scores:', progress.pronunciationScores.map(s => `${s.task} (${s.score}%)`));
+        
         return true;
     } catch (error) {
         console.error('Failed to save pronunciation score:', error);
