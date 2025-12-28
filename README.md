@@ -42,18 +42,33 @@ A comprehensive web application for teaching Mandarin Chinese pronunciation to c
 
 ## 🚀 Getting Started
 
-### Quick Start (Modular Version)
-1. **Start the local server** (required for ES6 modules):
+### Prerequisites
+- Node.js 14+ installed
+- npm (comes with Node.js)
+
+### Quick Start
+1. **Install dependencies**:
    ```bash
    cd mandarin-tutor
-   python3 server.py
+   npm install
    ```
-2. **Open your browser** to http://localhost:8000
-3. **(Optional) Configure Azure Speech SDK** for real pronunciation assessment:
-   - See [AZURE_SETUP.md](AZURE_SETUP.md) for detailed instructions
+
+2. **Start the local server** (required for ES6 modules and API endpoints):
+   ```bash
+   # Without Azure (demo mode):
+   npm start
+   
+   # With Azure credentials (real pronunciation assessment):
+   AZURE_SPEECH_KEY="your_key" AZURE_SPEECH_REGION="westus3" npm start
+   ```
+
+3. **Open your browser** to http://localhost:8000
+
+4. **(Optional) Configure Azure Speech SDK** for real pronunciation assessment:
+   - See [Azure Setup](#azure-speech-sdk-setup-optional-but-recommended) below
    - Get free Azure Speech Service credentials
-   - Update `js/config.js` with your credentials
-4. Start with the **Translate** tab
+   - Run server with AZURE_SPEECH_KEY and AZURE_SPEECH_REGION env vars
+5. Start with the **Translate** tab
 5. Enter English words to get Mandarin translations
 6. Save translations and create lessons or games
 7. Practice pronunciation in the **Practice** tab
@@ -64,9 +79,15 @@ A comprehensive web application for teaching Mandarin Chinese pronunciation to c
 For professional-grade pronunciation assessment with real-time scoring:
 
 1. **Create Azure Account**: Get a [free Azure account](https://azure.microsoft.com/en-us/free/)
-2. **Set up Speech Service**: Follow [AZURE_SETUP.md](AZURE_SETUP.md) for step-by-step instructions
-3. **Get Credentials**: Obtain your subscription key and region
-4. **Configure App**: Update `js/config.js` with your credentials
+2. **Create Speech Service Resource**: 
+   - Go to [Azure Portal](https://portal.azure.com)
+   - Create a new "Speech" resource
+   - Choose a region (e.g., "West US 3")
+   - Note your subscription key and region
+3. **Run with credentials**:
+   ```bash
+   AZURE_SPEECH_KEY="your_subscription_key" AZURE_SPEECH_REGION="westus3" npm start
+   ```
 
 **Benefits of Azure Integration:**
 - Real pronunciation scoring based on native Mandarin patterns
@@ -89,7 +110,7 @@ If you prefer the monolithic version without a server:
 - Modern browser with ES6 module support
 - Audio/microphone permissions for pronunciation practice
 - Speech Synthesis API for text-to-speech
-- Local HTTP server for modular version (Python 3 included)
+- Local HTTP server for modular version (Node.js included)
 
 ## 📁 Project Structure
 
