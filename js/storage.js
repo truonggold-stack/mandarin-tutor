@@ -220,8 +220,6 @@ export function savePronunciationScore(scoreData) {
     try {
         const progress = loadProgress();
         
-        console.log('💾 BEFORE push - pronunciationScores array:', progress.pronunciationScores);
-        
         // Ensure pronunciationScores array exists
         progress.pronunciationScores = progress.pronunciationScores || [];
         
@@ -239,21 +237,12 @@ export function savePronunciationScore(scoreData) {
         
         progress.pronunciationScores.push(newScoreEntry);
         
-        console.log('💾 Saving new pronunciation score:', newScoreEntry);
-        console.log('💾 Total scores in array AFTER push:', progress.pronunciationScores.length);
-        
         // Keep only last 50 scores to avoid storage bloat
         if (progress.pronunciationScores.length > 50) {
             progress.pronunciationScores = progress.pronunciationScores.slice(-50);
         }
         
         saveProgress(progress);
-        
-        // Verify it was actually saved
-        const verifyProgress = loadProgress();
-        console.log('💾 VERIFICATION - Scores in localStorage after save:', verifyProgress.pronunciationScores.length);
-        console.log('💾 VERIFICATION - All scores:', verifyProgress.pronunciationScores.map(s => `${s.task} (${s.score}%)`));
-        
         return true;
     } catch (error) {
         console.error('Failed to save pronunciation score:', error);
@@ -351,15 +340,6 @@ export function getPronunciationProgressByLesson() {
                 lessonName: lesson.lessonName,
                 tasks: taskArray
             });
-        });
-        
-        console.log('📊 Pronunciation Progress Data:', {
-            totalLessons: result.length,
-            lessons: result.map(l => ({
-                name: l.lessonName,
-                taskCount: l.tasks.length,
-                tasks: l.tasks.map(t => `${t.task} (Attempt #${t.attemptNumber})`)
-            }))
         });
         
         return result;

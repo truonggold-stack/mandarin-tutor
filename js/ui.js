@@ -233,14 +233,6 @@ export function displayPronunciationProgress() {
     import('./storage.js').then(({ getPronunciationProgressByLesson }) => {
         const progressData = getPronunciationProgressByLesson();
         
-        console.log('🎨 UI received progress data:', progressData.length, 'lessons');
-        progressData.forEach((lesson, i) => {
-            console.log(`  Lesson ${i+1}: ${lesson.lessonName} with ${lesson.tasks.length} task entries`);
-            lesson.tasks.forEach((task, j) => {
-                console.log(`    Task ${j+1}: "${task.task}" - Attempt #${task.attemptNumber} - ${task.score}%`);
-            });
-        });
-        
         if (!progressData || progressData.length === 0) {
             container.innerHTML = '<p class="empty-state">No pronunciation practice sessions yet!</p>';
             return;
@@ -248,7 +240,6 @@ export function displayPronunciationProgress() {
         
         // Build the HTML for each lesson
         const lessonsHtml = progressData.map(lesson => {
-            console.log(`🔨 Building HTML for lesson: ${lesson.lessonName} with ${lesson.tasks.length} tasks`);
             const tasksHtml = lesson.tasks.map(task => {
                 const date = new Date(task.date).toLocaleDateString();
                 const time = new Date(task.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -285,10 +276,7 @@ export function displayPronunciationProgress() {
                 `;
             }).join('');
             
-            console.log(`  ✅ Generated ${lesson.tasks.length} task rows, tasksHtml length: ${tasksHtml.length} chars`);
-            console.log(`  📝 First 200 chars of tasksHtml:`, tasksHtml.substring(0, 200));
-            
-            const lessonHtml = `
+            return `
                 <div class="pronunciation-lesson-group">
                     <h4 class="pronunciation-lesson-title">${lesson.lessonName}</h4>
                     <table class="pronunciation-table">
@@ -306,28 +294,13 @@ export function displayPronunciationProgress() {
                     </table>
                 </div>
             `;
-            
-            console.log(`  🏗️ Full lesson HTML length: ${lessonHtml.length} chars`);
-            
-            return lessonHtml;
         }).join('');
-        
-        console.log(`🎉 Final lessonsHtml length: ${lessonsHtml.length} chars`);
-        console.log(`🎉 First 500 chars:`, lessonsHtml.substring(0, 500));
         
         container.innerHTML = `
             <div class="pronunciation-progress-section">
                 ${lessonsHtml}
             </div>
         `;
-        
-        // Check what was actually rendered
-        const tables = container.querySelectorAll('.pronunciation-table tbody');
-        console.log(`🔍 DOM Check: Found ${tables.length} tables in DOM`);
-        tables.forEach((tbody, i) => {
-            const rows = tbody.querySelectorAll('tr');
-            console.log(`  Table ${i+1}: ${rows.length} rows in DOM`);
-        });
     }).catch(error => {
         console.error('Failed to display pronunciation progress:', error);
         container.innerHTML = '<p class="empty-state">Error loading pronunciation progress</p>';
