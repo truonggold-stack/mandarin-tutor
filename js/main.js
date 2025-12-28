@@ -610,49 +610,39 @@ function displayPronunciationResults(result) {
                     Overall: ${result.azureData.overallScore}%
                 </div>
             ` : ''}
-            <button class="btn-primary" id="save-assessment-btn" style="margin-top: 15px;">
-                ✅ Save Assessment
-            </button>
+            <div style="margin-top: 15px; padding: 10px; background: #e8f5e9; border-radius: 5px; color: #2e7d32; font-size: 0.9rem;">
+                ✅ Score saved automatically
+            </div>
         </div>
     `;
     
     ratingDiv.style.display = 'block';
     
-    // Setup save button
-    const saveBtn = document.getElementById('save-assessment-btn');
-    if (saveBtn) {
-        saveBtn.onclick = () => {
-            const rating = {
+    // Automatically save the assessment
+    const rating = {
+        stars: result.stars,
+        tone: result.toneScore,
+        clarity: result.clarityScore,
+        notes: result.feedback
+    };
+    
+    // Save to lesson ratings (existing functionality)
+    savePronunciationRating(rating);
+    
+    // Also save to pronunciation progress tracking
+    const lessonInfo = getCurrentLessonInfo();
+    if (lessonInfo) {
+        import('./storage.js').then(({ savePronunciationScore }) => {
+            savePronunciationScore({
+                lessonId: lessonInfo.lessonId,
+                lessonName: lessonInfo.lessonName,
+                task: lessonInfo.task,
+                score: Math.round((result.stars / 5) * 100),
                 stars: result.stars,
-                tone: result.toneScore,
-                clarity: result.clarityScore,
-                notes: result.feedback
-            };
-            
-            // Save to lesson ratings (existing functionality)
-            if (savePronunciationRating(rating)) {
-                // Also save to pronunciation progress tracking
-                const lessonInfo = getCurrentLessonInfo();
-                if (lessonInfo) {
-                    import('./storage.js').then(({ savePronunciationScore }) => {
-                        savePronunciationScore({
-                            lessonId: lessonInfo.lessonId,
-                            lessonName: lessonInfo.lessonName,
-                            task: lessonInfo.task,
-                            score: Math.round((result.stars / 5) * 100),
-                            stars: result.stars,
-                            toneScore: result.toneScore,
-                            clarityScore: result.clarityScore
-                        });
-                    });
-                }
-                
-                alert('✅ Assessment saved!');
-                ratingDiv.style.display = 'none';
-            } else {
-                alert('Failed to save assessment');
-            }
-        };
+                toneScore: result.toneScore,
+                clarityScore: result.clarityScore
+            });
+        });
     }
 }
 

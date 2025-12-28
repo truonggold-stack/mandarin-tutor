@@ -213,6 +213,7 @@ export function loadGames() {
 
 /**
  * Save pronunciation score to progress
+ * Overrides the most recent score for the same lesson/task if it exists
  * @param {Object} scoreData - Score data with lesson, task, and score info
  */
 export function savePronunciationScore(scoreData) {
@@ -222,8 +223,19 @@ export function savePronunciationScore(scoreData) {
         // Ensure pronunciationScores array exists
         progress.pronunciationScores = progress.pronunciationScores || [];
         
-        // Add new score entry
-        progress.pronunciationScores.push({
+        // Check if there's already a score for this exact lesson/task combination
+        // Find the most recent matching score (searching from end of array)
+        let overrideIndex = -1;
+        for (let i = progress.pronunciationScores.length - 1; i >= 0; i--) {
+            const existingScore = progress.pronunciationScores[i];
+            if (existingScore.lessonId === scoreData.lessonId && 
+                existingScore.task === scoreData.task) {
+                overrideIndex = i;
+                break;
+            }
+        }
+        
+        const newScoreEntry = {
             date: new Date().toISOString(),
             lessonId: scoreData.lessonId,
             lessonName: scoreData.lessonName,
@@ -232,7 +244,15 @@ export function savePronunciationScore(scoreData) {
             stars: scoreData.stars,
             toneScore: scoreData.toneScore,
             clarityScore: scoreData.clarityScore
-        });
+        };
+        
+        if (overrideIndex !== -1) {
+            // Override the existing score with the new one
+            progress.pronunciationScores[overrideIndex] = newScoreEntry;
+        } else {
+            // Add new score entry
+            progress.pronunciationScores.push(newScoreEntry);
+        }
         
         // Keep only last 100 scores to avoid storage bloat
         if (progress.pronunciationScores.length > 100) {
