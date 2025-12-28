@@ -237,9 +237,9 @@ export function savePronunciationScore(scoreData) {
         
         progress.pronunciationScores.push(newScoreEntry);
         
-        // Keep only last 100 scores to avoid storage bloat
-        if (progress.pronunciationScores.length > 100) {
-            progress.pronunciationScores = progress.pronunciationScores.slice(-100);
+        // Keep only last 50 scores to avoid storage bloat
+        if (progress.pronunciationScores.length > 50) {
+            progress.pronunciationScores = progress.pronunciationScores.slice(-50);
         }
         
         saveProgress(progress);
