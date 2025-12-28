@@ -420,6 +420,11 @@ export function savePronunciationRating(rating) {
     );
 
     if (success) {
+        // Ensure progressData is loaded
+        if (!progressData) {
+            progressData = loadProgress();
+        }
+        
         // Ensure progressData fields exist
         progressData.totalExercises = (progressData.totalExercises || 0) + 1;
         progressData.totalScore = (progressData.totalScore || 0) + ((rating.stars || 0) / 5) * 100;
