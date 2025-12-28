@@ -255,10 +255,13 @@ export function displayPronunciationProgress() {
                 
                 const starsHtml = '★'.repeat(task.stars) + '☆'.repeat(5 - task.stars);
                 
+                // Add attempt number if there are multiple attempts for this task
+                const taskDisplay = task.attemptNumber ? `${task.task} <span style="font-size: 0.8rem; color: #666;">(Attempt #${task.attemptNumber})</span>` : task.task;
+                
                 return `
                     <tr>
                         <td>${date}<br><span style="font-size: 0.85rem; color: #666;">${time}</span></td>
-                        <td>${task.task}</td>
+                        <td>${taskDisplay}</td>
                         <td>
                             <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
                                 <div style="color: #f59e0b;">${starsHtml}</div>
