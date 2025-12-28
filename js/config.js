@@ -13,10 +13,10 @@ export const apiEndpoints = {
 // When running locally, use localhost
 // When deployed to Vercel, these will be relative URLs
 export const getApiUrl = (endpoint) => {
-    // In production on Vercel, use relative URLs
-    // In local development, you can override this if needed
+    // In local development (localhost), use the same origin
+    // In production (Vercel/Netlify), use relative URLs
     const baseUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000' // For local Vercel dev server
+        ? `http://localhost:${window.location.port}` // Use current dev server port
         : ''; // Use relative URLs in production
     
     return `${baseUrl}${endpoint}`;
@@ -193,7 +193,6 @@ export const translationDictionary = {
     'soup': { chinese: '汤', pinyin: 'tāng', emoji: '🍲' },
     'salt': { chinese: '盐', pinyin: 'yán', emoji: '🧂' },
     'sugar': { chinese: '糖', pinyin: 'táng', emoji: '🍬' }
-    // ... (Additional dictionary entries would continue here in a real implementation)
 };
 
 export const sampleLessons = [

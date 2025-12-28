@@ -151,7 +151,11 @@ export async function assessPronunciationWithAzure(audioBlob, referenceText) {
         
         const apiUrl = getApiUrl(apiEndpoints.speechAssessment);
         
-        console.log('Calling serverless speech assessment API...', { referenceText });
+        console.log('🎤 Calling serverless speech assessment API...', { 
+            referenceText, 
+            apiUrl,
+            audioDataSize: audioData.length 
+        });
         
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -160,36 +164,80 @@ export async function assessPronunciationWithAzure(audioBlob, referenceText) {
             },
             body: JSON.stringify({
                 audioData,
-                referenceText
+                referenceText,
+                // Provide content type so server can convert properly
+                contentType: audioBlob.type || 'audio/webm'
             })
         });
 
+        console.log('📡 API Response Status:', response.status, response.statusText);
+
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-            console.error('Speech assessment API error:', errorData);
-            console.warn('Falling back to simulated scoring');
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch {
+                errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+            }
+            console.error('❌ Speech assessment API error:', errorData);
+            console.warn('⚠️ Falling back to simulated scoring. Reason:', errorData.error || 'HTTP Error');
             return generatePronunciationScore();
         }
 
         const data = await response.json();
-        console.log('Speech assessment API response:', data);
+        console.log('✅ Speech assessment API response:', data);
+        
+        // Check for Azure SDK errors
+        if (data.reason === 'RecognitionFailed') {
+            console.warn('⚠️ Azure Speech SDK failed - check if audio quality is good');
+            return generatePronunciationScore();
+        }
         
         if (!data.success) {
-            console.warn('Assessment failed, using fallback scoring');
+            console.warn('⚠️ Assessment failed (success: false), using fallback scoring');
+            console.warn('   Error reason:', data.error || 'Unknown');
             return generatePronunciationScore();
         }
 
-        return {
+        // Validate Azure response has required fields (allow zero values)
+        const hasRequiredFields = ['stars','toneScore','clarityScore']
+            .every(k => data[k] !== undefined && data[k] !== null);
+        if (!hasRequiredFields) {
+            console.warn('⚠️ Azure response missing required fields (allowing zeros):', {
+                stars: data.stars,
+                toneScore: data.toneScore,
+                clarityScore: data.clarityScore
+            });
+            // Proceed with safe defaults instead of falling back
+        }
+
+        console.log('🎉 Using Azure assessment scores:', {
             stars: data.stars,
             toneScore: data.toneScore,
-            clarityScore: data.clarityScore,
-            feedback: data.feedback,
-            azureData: data.azureData
+            clarityScore: data.clarityScore
+        });
+
+        return {
+            stars: Number.isFinite(data.stars) ? data.stars : 0,
+            toneScore: Number.isFinite(data.toneScore) ? data.toneScore : 0,
+            clarityScore: Number.isFinite(data.clarityScore) ? data.clarityScore : 0,
+            feedback: data.feedback || 'Assessment complete',
+            azureData: data.azureData || null
         };
         
     } catch (error) {
-        console.error('Error during pronunciation assessment:', error);
-        console.warn('Falling back to simulated scoring');
+        console.error('❌ Error during pronunciation assessment:', error);
+        console.warn('⚠️ Falling back to simulated scoring');
+        console.warn('   Error type:', error.name, '- Message:', error.message);
+        
+        // Additional debugging info
+        if (error.message.includes('Failed to fetch')) {
+            console.warn('   Hint: Network/CORS issue. Check if API is deployed and accessible.');
+        }
+        if (error.message.includes('JSON')) {
+            console.warn('   Hint: API returned invalid JSON. Check server logs.');
+        }
+        
         return generatePronunciationScore();
     }
 }

@@ -11,6 +11,9 @@ let matchedPairs = 0;
 let moveCount = 0;
 let gameTimer = null;
 let gameStartTime = null;
+let firstTryMatches = 0;
+let attemptedPairs = new Set(); // Track which pairs have been attempted (even with wrong answer)
+let successfulFirstTry = new Set(); // Track which pairs were matched correctly on FIRST try
 
 /**
  * Start a new game with difficulty level
@@ -83,6 +86,9 @@ function resetGameState() {
     draggedCard = null;
     matchedPairs = 0;
     moveCount = 0;
+    firstTryMatches = 0;
+    attemptedPairs = new Set();
+    successfulFirstTry = new Set();
     stopGameTimer();
 }
 
@@ -152,6 +158,9 @@ export function handleDrop(targetPairId) {
     moveCount++;
     
     const isMatch = draggedCard === targetPairId;
+    console.log('🎯 handleDrop called:');
+    console.log('   draggedCard=' + draggedCard + ', targetPairId=' + targetPairId + ', isMatch=' + isMatch);
+    console.log('   attemptedPairs before:', Array.from(attemptedPairs));
     
     if (isMatch) {
         // Correct match
@@ -159,6 +168,17 @@ export function handleDrop(targetPairId) {
         if (pair) {
             pair.matched = true;
             matchedPairs++;
+            console.log('✅ Match found! matchedPairs now: ' + matchedPairs + ' / ' + gamePairs.length);
+            
+            // Only count as first-try if this card is being matched for the FIRST time (and correctly)
+            // If the card hasn't been attempted before, this is its first try
+            if (!attemptedPairs.has(draggedCard)) {
+                firstTryMatches++;
+                successfulFirstTry.add(draggedCard);
+                console.log('🎯 First try match! firstTryMatches: ' + firstTryMatches);
+            } else {
+                console.log('⚠️ Card ' + draggedCard + ' was attempted before, not counting as first try');
+            }
             
             // Play audio on match
             speakChinese(pair.chinese);
@@ -166,8 +186,10 @@ export function handleDrop(targetPairId) {
         
         // Check if game is complete
         const isComplete = matchedPairs === gamePairs.length;
+        console.log('🔍 After match - checking completion: matchedPairs=' + matchedPairs + ', gamePairs.length=' + gamePairs.length + ', isComplete=' + isComplete);
         if (isComplete) {
             stopGameTimer();
+            console.log('🎉 GAME SHOULD BE COMPLETE NOW!');
         }
         
         draggedCard = null;
@@ -177,10 +199,14 @@ export function handleDrop(targetPairId) {
             moveCount,
             matchedPairs,
             totalPairs: gamePairs.length,
+            firstTryMatches,
             isComplete
         };
     } else {
-        // Incorrect match
+        // Incorrect match - mark as attempted so we know this card was tried with wrong answer
+        console.log('❌ Wrong match for card ' + draggedCard + ' onto target ' + targetPairId);
+        attemptedPairs.add(draggedCard);
+        console.log('   Card ' + draggedCard + ' marked as attempted. attemptedPairs now:', Array.from(attemptedPairs));
         draggedCard = null;
         
         return {
@@ -188,6 +214,7 @@ export function handleDrop(targetPairId) {
             moveCount,
             matchedPairs,
             totalPairs: gamePairs.length,
+            firstTryMatches,
             isComplete: false
         };
     }
@@ -198,13 +225,15 @@ export function handleDrop(targetPairId) {
  * @returns {Object} Game state object
  */
 export function getGameState() {
+    const isComplete = matchedPairs === gamePairs.length;
+    console.log('📊 getGameState called: matchedPairs=' + matchedPairs + ', gamePairs.length=' + gamePairs.length + ', isComplete=' + isComplete);
     return {
         pairs: [...gamePairs],
         matchedPairs,
         moveCount,
         elapsedTime: getElapsedTime(),
         formattedTime: getFormattedTime(),
-        isComplete: matchedPairs === gamePairs.length
+        isComplete: isComplete
     };
 }
 
@@ -233,11 +262,17 @@ export function playPairAudio(pairId) {
  * @returns {Object} Statistics object
  */
 export function getGameStats() {
+    const firstTryAccuracy = gamePairs.length > 0 ? Math.round((firstTryMatches / gamePairs.length) * 100) : 0;
+    
+    console.log('📈 getGameStats: firstTryMatches=' + firstTryMatches + ', gamePairs.length=' + gamePairs.length + ', accuracy=' + firstTryAccuracy + '%');
+    
     return {
         totalPairs: gamePairs.length,
         matchedPairs,
         remainingPairs: gamePairs.length - matchedPairs,
         moveCount,
+        firstTryMatches,
+        firstTryAccuracy,
         elapsedTime: getElapsedTime(),
         formattedTime: getFormattedTime(),
         accuracy: moveCount > 0 ? Math.round((matchedPairs / moveCount) * 100) : 0
@@ -251,12 +286,15 @@ export function getGameStats() {
 export function endGame() {
     stopGameTimer();
     const stats = getGameStats();
+    console.log('📈 Game stats:', stats);
     
-    return {
+    const result = {
         ...stats,
         completed: true,
         score: calculateScore(stats)
     };
+    console.log('🎮 Final game result object:', result);
+    return result;
 }
 
 /**

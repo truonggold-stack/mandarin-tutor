@@ -6,9 +6,13 @@
     <title>Mandarin Tutor - 中文导师</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     
     <!-- Azure Speech SDK -->
     <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
+    
+    <!-- Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -28,34 +32,14 @@
         <!-- Upload Tab -->
         <div class="tab-content" id="upload-tab">
             <div class="upload-section">
-                <h2>📁 Create Lesson from Audio</h2>
-                <p class="section-description">Upload audio files to analyze Chinese pronunciation and create custom lessons for your children.</p>
+                <h2>📚 Create Custom Lessons</h2>
+                <p class="section-description">Create custom lessons from your saved translations on the Home tab.</p>
                 
-                <div class="upload-area" id="upload-area">
-                    <div class="upload-icon">🎵</div>
-                    <p>Drag and drop audio files here or click to browse</p>
-                    <input type="file" id="audio-file" accept="audio/*" multiple>
-                    <button class="btn-primary" onclick="document.getElementById('audio-file').click()">
-                        Choose Audio Files
-                    </button>
-                </div>
-                
-                <div class="uploaded-files" id="uploaded-files"></div>
-                
-                <div class="processing-section" id="processing-section" style="display: none;">
-                    <h3>🔄 Analyzing Audio...</h3>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                    </div>
-                    <p id="processing-status">Analyzing audio content and pronunciation quality...</p>
-                </div>
-
-                <!-- Audio Analysis Results -->
-                <div class="audio-analysis" id="audio-analysis" style="display: none;">
-                    <h3>📊 Audio Analysis Results</h3>
-                    <div class="analysis-grid" id="analysis-grid">
-                        <!-- Analysis items will be populated here -->
-                    </div>
+                <div class="empty-state" style="padding: 3rem; text-align: center;">
+                    <p style="font-size: 1.2rem; color: #666;">
+                        💡 Go to the <strong>Home</strong> tab to add translations, then click 
+                        <strong>"📚 Create Lesson"</strong> to build a custom lesson.
+                    </p>
                 </div>
 
                 <!-- Detected Content Section -->
@@ -286,6 +270,14 @@
                     </select>
                 </div>
 
+                <!-- My Games Section -->
+                <div class="my-games-section" style="margin: 2rem 0;">
+                    <h3>🎮 My Games</h3>
+                    <div id="saved-games-list" class="saved-games-list">
+                        <p class="empty-state">No saved games yet. Create a game from your translations on the Home tab!</p>
+                    </div>
+                </div>
+
                 <div class="game-board" id="game-board">
                     <p class="empty-state">Click "New Game" to start playing!</p>
                 </div>
@@ -333,6 +325,45 @@
                         <!-- History items will be populated here -->
                     </div>
                 </div>
+
+                <div class="game-history">
+                    <h3>🎮 Game History</h3>
+                    <div class="game-history-list" id="game-history-list">
+                        <!-- Game history items will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Score Modal -->
+    <div class="modal" id="game-score-modal" style="display: none;">
+        <div class="modal-content game-score-modal">
+            <div class="modal-header">
+                <h2>🎉 Game Complete!</h2>
+            </div>
+            <div class="modal-body">
+                <div class="score-display">
+                    <div class="score-circle">
+                        <div class="score-percentage" id="score-percentage">0%</div>
+                        <div class="score-label">Accuracy</div>
+                    </div>
+                </div>
+                <div class="score-details">
+                    <div class="score-item">
+                        <span class="score-label">First Try Matches:</span>
+                        <span class="score-value" id="first-try-matches">0 / 0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">Time:</span>
+                        <span class="score-value" id="game-completion-time">0:00</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="document.getElementById('game-score-modal').style.display='none'; switchTab('game');">
+                    Continue
+                </button>
             </div>
         </div>
     </div>

@@ -4,7 +4,8 @@
 const STORAGE_KEYS = {
     LESSONS: 'mandarinLessons',
     TRANSLATIONS: 'savedTranslations',
-    PROGRESS: 'progressData'
+    PROGRESS: 'progressData',
+    GAMES: 'savedGames'
 };
 
 /**
@@ -89,7 +90,10 @@ export function loadProgress() {
             totalScore: 0,
             lessonsCompleted: 0,
             practiceTime: 0,
-            history: []
+            gamesPlayed: 0,
+            totalGameScore: 0,
+            history: [],
+            gameHistory: []
         };
     } catch (error) {
         console.error('Failed to load progress:', error);
@@ -98,8 +102,42 @@ export function loadProgress() {
             totalScore: 0,
             lessonsCompleted: 0,
             practiceTime: 0,
-            history: []
+            gamesPlayed: 0,
+            totalGameScore: 0,
+            history: [],
+            gameHistory: []
         };
+    }
+}
+
+/**
+ * Save game result to progress
+ * @param {Object} gameResult - Game result with score, time, etc.
+ */
+export function saveGameResult(gameResult) {
+    try {
+        const progress = loadProgress();
+        
+        // Add to game history
+        progress.gameHistory = progress.gameHistory || [];
+        progress.gameHistory.push({
+            date: new Date().toISOString(),
+            score: gameResult.firstTryAccuracy,
+            firstTryMatches: gameResult.firstTryMatches,
+            totalPairs: gameResult.totalPairs,
+            time: gameResult.formattedTime,
+            elapsedSeconds: gameResult.elapsedTime
+        });
+        
+        // Update totals
+        progress.gamesPlayed = (progress.gamesPlayed || 0) + 1;
+        progress.totalGameScore = (progress.totalGameScore || 0) + gameResult.firstTryAccuracy;
+        
+        saveProgress(progress);
+        return true;
+    } catch (error) {
+        console.error('Failed to save game result:', error);
+        return false;
     }
 }
 
@@ -142,3 +180,32 @@ export function getStorageInfo() {
         return null;
     }
 }
+
+/**
+ * Save games to localStorage
+ * @param {Array} games - Array of game objects
+ */
+export function saveGames(games) {
+    try {
+        localStorage.setItem(STORAGE_KEYS.GAMES, JSON.stringify(games));
+        return true;
+    } catch (error) {
+        console.error('Failed to save games:', error);
+        return false;
+    }
+}
+
+/**
+ * Load games from localStorage
+ * @returns {Array} Array of game objects
+ */
+export function loadGames() {
+    try {
+        const data = localStorage.getItem(STORAGE_KEYS.GAMES);
+        return data ? JSON.parse(data) : [];
+    } catch (error) {
+        console.error('Failed to load games:', error);
+        return [];
+    }
+}
+

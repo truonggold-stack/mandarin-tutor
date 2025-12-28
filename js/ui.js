@@ -142,6 +142,40 @@ export function updateProgressDisplay(progressData) {
             : '0%';
     document.getElementById('lessons-completed').textContent = progressData.lessonsCompleted;
     document.getElementById('practice-time').textContent = progressData.practiceTime;
+    
+    // Display game history
+    displayGameHistory(progressData.gameHistory || []);
+}
+
+/**
+ * Display game history in progress tab
+ * @param {Array} gameHistory - Array of game results
+ */
+export function displayGameHistory(gameHistory) {
+    const historyContainer = document.getElementById('game-history-list');
+    
+    if (!historyContainer) return;
+    
+    if (!gameHistory || gameHistory.length === 0) {
+        historyContainer.innerHTML = '<p class="empty-state">No games played yet!</p>';
+        return;
+    }
+    
+    historyContainer.innerHTML = gameHistory
+        .slice()
+        .reverse()
+        .map((game, index) => `
+            <div class="game-history-item">
+                <div>
+                    <div style="font-weight: 600; color: #333;">${game.firstTryMatches}/${game.totalPairs} Correct (First Try)</div>
+                    <div class="game-date">${new Date(game.date).toLocaleDateString()} - ${new Date(game.date).toLocaleTimeString()}</div>
+                </div>
+                <div>
+                    <span class="game-score">${game.score}%</span>
+                    <div style="font-size: 0.85rem; color: #666; margin-top: 5px;">⏱️ ${game.time}</div>
+                </div>
+            </div>
+        `).join('');
 }
 
 /**
@@ -278,4 +312,39 @@ export function toggleElement(elementId, show) {
     if (element) {
         element.style.display = show ? 'block' : 'none';
     }
+}
+
+/**
+ * Display saved games list
+ * @param {Array} games - Array of game objects
+ */
+export function displaySavedGames(games) {
+    const container = document.getElementById('saved-games-list');
+    if (!container) return;
+
+    if (!games || games.length === 0) {
+        container.innerHTML = '<p class="empty-state">No saved games yet. Create a game from your translations on the Home tab!</p>';
+        return;
+    }
+
+    container.innerHTML = games.map((game, index) => `
+        <div class="saved-game-card" data-game-id="${game.id}">
+            <div class="game-card-header">
+                <h4>${game.name}</h4>
+                <span class="game-date">${new Date(game.createdAt).toLocaleDateString()}</span>
+            </div>
+            <div class="game-card-info">
+                <span class="game-pair-count">${game.pairs.length} pairs</span>
+                ${game.bestTime ? `<span class="game-best-time">Best: ${game.bestTime}</span>` : ''}
+            </div>
+            <div class="game-card-actions">
+                <button class="btn-primary btn-small" onclick="window.playGame(${index})">
+                    ▶️ Play
+                </button>
+                <button class="btn-secondary btn-small" onclick="window.deleteGame(${index})">
+                    🗑️ Delete
+                </button>
+            </div>
+        </div>
+    `).join('');
 }

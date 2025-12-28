@@ -6,6 +6,7 @@ let audioContext = null;
 let mediaRecorder = null;
 let isRecording = false;
 let recordedChunks = [];
+let recordedMimeType = '';
 
 /**
  * Initialize audio context
@@ -48,6 +49,29 @@ export function speakChinese(text, rate = 0.8) {
 }
 
 /**
+ * Speak English text using speech synthesis
+ * @param {string} text - English text to speak
+ * @param {number} rate - Speech rate (default 1.0)
+ */
+export function speakEnglish(text, rate = 1.0) {
+    if (!('speechSynthesis' in window)) {
+        console.error('Speech synthesis not supported');
+        return false;
+    }
+    
+    try {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = rate;
+        window.speechSynthesis.speak(utterance);
+        return true;
+    } catch (error) {
+        console.error('Failed to speak:', error);
+        return false;
+    }
+}
+
+/**
  * Stop any ongoing speech
  */
 export function stopSpeaking() {
@@ -75,11 +99,17 @@ export async function startRecording(onStop) {
         mediaRecorder.ondataavailable = (e) => {
             if (e.data.size > 0) {
                 recordedChunks.push(e.data);
+                // Capture the true mime type from MediaRecorder
+                if (!recordedMimeType && e.data.type) {
+                    recordedMimeType = e.data.type;
+                }
             }
         };
         
         mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(recordedChunks, { type: 'audio/wav' });
+            // Use the actual recorded mime type rather than forcing WAV
+            const blobType = recordedMimeType || 'audio/webm';
+            const audioBlob = new Blob(recordedChunks, { type: blobType });
             const audioUrl = URL.createObjectURL(audioBlob);
             stream.getTracks().forEach(track => track.stop());
             
@@ -110,6 +140,7 @@ export function stopRecording() {
     try {
         mediaRecorder.stop();
         isRecording = false;
+        recordedMimeType = '';
         return true;
     } catch (error) {
         console.error('Failed to stop recording:', error);
