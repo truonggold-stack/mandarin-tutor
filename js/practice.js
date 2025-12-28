@@ -15,6 +15,7 @@ let progressData = null;
 // Audio conversion constants
 const TARGET_SAMPLE_RATE = 16000; // Azure Speech SDK preferred sample rate (16kHz)
 const AUDIO_NORMALIZATION_VOLUME = 0.8; // Prevent clipping in WAV conversion
+const BASE64_CHUNK_SIZE = 0x4000; // 16KB chunks for base64 conversion
 
 /**
  * Initialize practice module
@@ -267,9 +268,10 @@ export async function assessPronunciationWithAzure(audioBlob, referenceText) {
  * @returns {Promise<string>} Base64 encoded WAV audio data (no data: prefix)
  */
 async function blobToWav16kBase64(blob) {
+    let audioContext;
     try {
         // Create AudioContext to decode the blob
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
         
         // Read blob as ArrayBuffer
         const arrayBuffer = await blob.arrayBuffer();
@@ -280,7 +282,7 @@ async function blobToWav16kBase64(blob) {
         // Create OfflineAudioContext to resample to 16kHz mono
         const offlineContext = new OfflineAudioContext(
             1, // mono
-            Math.floor(audioBuffer.duration * TARGET_SAMPLE_RATE),
+            Math.ceil(audioBuffer.duration * TARGET_SAMPLE_RATE),
             TARGET_SAMPLE_RATE
         );
         
@@ -305,6 +307,11 @@ async function blobToWav16kBase64(blob) {
     } catch (error) {
         console.error('❌ Error converting to WAV:', error);
         throw error;
+    } finally {
+        // Clean up AudioContext to prevent resource leaks
+        if (audioContext && audioContext.state !== 'closed') {
+            audioContext.close();
+        }
     }
 }
 
@@ -384,11 +391,10 @@ function writeString(view, offset, string) {
  */
 function arrayBufferToBase64(buffer) {
     const bytes = new Uint8Array(buffer);
-    const CHUNK_SIZE = 0x4000; // 16KB chunks for optimal performance and safety
     let binary = '';
     
-    for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
-        const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, bytes.length));
+    for (let i = 0; i < bytes.length; i += BASE64_CHUNK_SIZE) {
+        const chunk = bytes.subarray(i, Math.min(i + BASE64_CHUNK_SIZE, bytes.length));
         binary += String.fromCharCode(...chunk);
     }
     
