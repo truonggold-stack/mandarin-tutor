@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><title>Test Progress Data</title></head>
+<body>
+<script type="module">
+import { getPronunciationProgressByLesson } from './js/storage.js';
+
+const data = getPronunciationProgressByLesson();
+console.log('Progress Data:', JSON.stringify(data, null, 2));
+console.log('Total lessons:', data.length);
+data.forEach((lesson, i) => {
+    console.log(`Lesson ${i + 1}: ${lesson.lessonName} - ${lesson.tasks.length} tasks`);
+    lesson.tasks.forEach((task, j) => {
+        console.log(`  Task ${j + 1}: ${task.task} - Attempt #${task.attemptNumber}`);
+    });
+});
+</script>
+</body>
+</html>

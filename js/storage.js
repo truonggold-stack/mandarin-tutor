@@ -342,6 +342,15 @@ export function getPronunciationProgressByLesson() {
             });
         });
         
+        console.log('📊 Pronunciation Progress Data:', {
+            totalLessons: result.length,
+            lessons: result.map(l => ({
+                name: l.lessonName,
+                taskCount: l.tasks.length,
+                tasks: l.tasks.map(t => `${t.task} (Attempt #${t.attemptNumber})`)
+            }))
+        });
+        
         return result;
     } catch (error) {
         console.error('Failed to get pronunciation progress:', error);

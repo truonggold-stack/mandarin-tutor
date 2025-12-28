@@ -233,6 +233,11 @@ export function displayPronunciationProgress() {
     import('./storage.js').then(({ getPronunciationProgressByLesson }) => {
         const progressData = getPronunciationProgressByLesson();
         
+        console.log('🎨 UI received progress data:', progressData.length, 'lessons');
+        progressData.forEach((lesson, i) => {
+            console.log(`  Lesson ${i+1}: ${lesson.lessonName} with ${lesson.tasks.length} task entries`);
+        });
+        
         if (!progressData || progressData.length === 0) {
             container.innerHTML = '<p class="empty-state">No pronunciation practice sessions yet!</p>';
             return;
