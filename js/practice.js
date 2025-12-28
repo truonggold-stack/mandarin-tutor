@@ -280,7 +280,7 @@ async function blobToWav16kBase64(blob) {
         // Create OfflineAudioContext to resample to 16kHz mono
         const offlineContext = new OfflineAudioContext(
             1, // mono
-            audioBuffer.duration * TARGET_SAMPLE_RATE,
+            Math.floor(audioBuffer.duration * TARGET_SAMPLE_RATE),
             TARGET_SAMPLE_RATE
         );
         
@@ -314,7 +314,6 @@ async function blobToWav16kBase64(blob) {
  * @returns {ArrayBuffer} WAV file data
  */
 function encodeWAV(audioBuffer) {
-    const numChannels = audioBuffer.numberOfChannels;
     const sampleRate = audioBuffer.sampleRate;
     const format = 1; // PCM
     const bitDepth = 16;
@@ -385,12 +384,12 @@ function writeString(view, offset, string) {
  */
 function arrayBufferToBase64(buffer) {
     const bytes = new Uint8Array(buffer);
-    const CHUNK_SIZE = 0x8000; // 32KB chunks to avoid call stack limits
+    const CHUNK_SIZE = 0x4000; // 16KB chunks for optimal performance and safety
     let binary = '';
     
     for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
         const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, bytes.length));
-        binary += String.fromCharCode.apply(null, chunk);
+        binary += String.fromCharCode(...chunk);
     }
     
     return btoa(binary);
