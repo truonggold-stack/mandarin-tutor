@@ -307,28 +307,27 @@ export function getPronunciationProgressByLesson() {
                     new Date(b.date) - new Date(a.date)
                 );
                 
-                // Return ALL scores for this task, not just the most recent
-                sortedScores.forEach((currentScore, index) => {
-                    const previous = index < sortedScores.length - 1 ? sortedScores[index + 1] : null;
-                    
-                    let improvement = null;
-                    if (previous) {
-                        const scoreDiff = currentScore.score - previous.score;
-                        improvement = scoreDiff > 0 ? 'improved' : 
-                                      scoreDiff < 0 ? 'declined' : 'same';
-                    }
-                    
-                    taskArray.push({
-                        task: taskText,
-                        date: currentScore.date,
-                        score: currentScore.score,
-                        stars: currentScore.stars,
-                        toneScore: currentScore.toneScore,
-                        clarityScore: currentScore.clarityScore,
-                        improvement: improvement,
-                        previousScore: previous ? previous.score : null,
-                        attemptNumber: sortedScores.length - index
-                    });
+                // Only show the most recent attempt for each task
+                const mostRecent = sortedScores[0];
+                const previous = sortedScores.length > 1 ? sortedScores[1] : null;
+                
+                let improvement = null;
+                if (previous) {
+                    const scoreDiff = mostRecent.score - previous.score;
+                    improvement = scoreDiff > 0 ? 'improved' : 
+                                  scoreDiff < 0 ? 'declined' : 'same';
+                }
+                
+                taskArray.push({
+                    task: taskText,
+                    date: mostRecent.date,
+                    score: mostRecent.score,
+                    stars: mostRecent.stars,
+                    toneScore: mostRecent.toneScore,
+                    clarityScore: mostRecent.clarityScore,
+                    improvement: improvement,
+                    previousScore: previous ? previous.score : null,
+                    totalAttempts: sortedScores.length
                 });
             });
             

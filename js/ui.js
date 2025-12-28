@@ -255,8 +255,10 @@ export function displayPronunciationProgress() {
                 
                 const starsHtml = '★'.repeat(task.stars) + '☆'.repeat(5 - task.stars);
                 
-                // Add attempt number if there are multiple attempts for this task
-                const taskDisplay = task.attemptNumber ? `${task.task} <span style="font-size: 0.8rem; color: #666;">(Attempt #${task.attemptNumber})</span>` : task.task;
+                // Show total attempts if more than 1
+                const taskDisplay = task.totalAttempts > 1 
+                    ? `${task.task} <span style="font-size: 0.8rem; color: #666;">(${task.totalAttempts} attempts)</span>` 
+                    : task.task;
                 
                 return `
                     <tr>
