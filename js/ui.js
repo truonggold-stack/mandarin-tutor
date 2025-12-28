@@ -48,14 +48,17 @@ export function displaySavedTranslations(translations) {
         return;
     }
     
-    listDiv.innerHTML = translations.map(t => `
+    listDiv.innerHTML = translations.map((t, index) => `
         <div class="translation-item">
             <div class="translation-content">
                 <div class="chinese-lg">${t.chinese}</div>
                 <div class="pinyin-sm">${t.pinyin}</div>
                 <div class="english-sm">${t.english}</div>
             </div>
-            <button class="btn-icon" onclick="window.speakChineseGlobal('${t.chinese}')">🔊</button>
+            <div style="display: flex; gap: 5px;">
+                <button class="btn-icon" onclick="window.speakChineseGlobal('${t.chinese}')">🔊</button>
+                <button class="btn-icon btn-remove" onclick="window.deleteTranslationGlobal(${index})" title="Delete translation">🗑️</button>
+            </div>
         </div>
     `).join('');
 }

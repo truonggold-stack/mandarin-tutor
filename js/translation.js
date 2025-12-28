@@ -217,6 +217,20 @@ export function clearTranslations() {
 }
 
 /**
+ * Delete a specific translation by index
+ * @param {number} index - Index of translation to delete
+ * @returns {boolean} True if deleted successfully
+ */
+export function deleteTranslation(index) {
+    if (index >= 0 && index < savedTranslations.length) {
+        savedTranslations.splice(index, 1);
+        saveTranslations(savedTranslations);
+        return true;
+    }
+    return false;
+}
+
+/**
  * Get translation count
  * @returns {number} Number of saved translations
  */

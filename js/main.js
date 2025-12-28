@@ -3,7 +3,7 @@
 
 import { sampleLessons } from './config.js';
 import { initializeAudio, speakChinese, speakEnglish } from './audio.js';
-import { initializeTranslation, translateWord, addTranslation, getTranslations, clearTranslations } from './translation.js';
+import { initializeTranslation, translateWord, addTranslation, getTranslations, clearTranslations, deleteTranslation } from './translation.js';
 import { initializeLessons, createLesson, getLessons, getLesson, deleteLesson } from './lessons.js';
 import { initializePractice, loadLesson as loadPracticeLesson, getCurrentExercise, nextExercise, previousExercise, playReference, startPracticeRecording, stopPracticeRecording, isPracticeRecording, assessPronunciationWithAzure, generatePronunciationScore, savePronunciationRating } from './practice.js';
 import { startNewGame, startCustomGame, getGameState, shuffleArray, handleDrop, handleDragStart, playPairAudio, endGame, isGameActive } from './game.js';
@@ -669,6 +669,14 @@ function setupGlobalFunctions() {
                 populateLessonSelector(lessons);
                 alert('Lesson deleted successfully!');
             }
+        }
+    };
+    
+    // Global function for deleting translation
+    window.deleteTranslationGlobal = (index) => {
+        if (deleteTranslation(index)) {
+            const translations = getTranslations();
+            displaySavedTranslations(translations);
         }
     };
     
