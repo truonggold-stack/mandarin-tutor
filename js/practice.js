@@ -146,15 +146,30 @@ export function isPracticeRecording() {
  */
 export async function assessPronunciationWithAzure(audioBlob, referenceText) {
     try {
-        // Convert audio blob to base64
-        const audioData = await blobToBase64(audioBlob);
+        // Attempt to convert audio to 16kHz 16-bit PCM WAV for better Azure compatibility
+        let audioData;
+        let contentType;
+        
+        try {
+            console.log('🔄 Attempting client-side conversion to 16kHz 16-bit PCM WAV...');
+            audioData = await blobToWav16kBase64(audioBlob);
+            contentType = 'audio/wav';
+            console.log('✅ Using WAV format for Azure Speech SDK');
+        } catch (conversionError) {
+            console.warn('⚠️ WAV conversion failed, falling back to original format:', conversionError.message);
+            // Fall back to original blob format
+            audioData = await blobToBase64(audioBlob);
+            contentType = audioBlob.type || 'audio/webm';
+            console.log('📎 Using fallback format:', contentType);
+        }
         
         const apiUrl = getApiUrl(apiEndpoints.speechAssessment);
         
         console.log('🎤 Calling serverless speech assessment API...', { 
             referenceText, 
             apiUrl,
-            audioDataSize: audioData.length 
+            audioDataSize: audioData.length,
+            contentType
         });
         
         const response = await fetch(apiUrl, {
@@ -165,8 +180,7 @@ export async function assessPronunciationWithAzure(audioBlob, referenceText) {
             body: JSON.stringify({
                 audioData,
                 referenceText,
-                // Provide content type so server can convert properly
-                contentType: audioBlob.type || 'audio/webm'
+                contentType
             })
         });
 
@@ -243,7 +257,140 @@ export async function assessPronunciationWithAzure(audioBlob, referenceText) {
 }
 
 /**
- * Convert blob to base64 string
+ * Convert blob to 16kHz 16-bit PCM WAV format (base64)
+ * This ensures Azure Speech SDK receives the expected audio format
+ * @param {Blob} blob - Audio blob from MediaRecorder
+ * @returns {Promise<string>} Base64 encoded WAV audio data (no data: prefix)
+ */
+async function blobToWav16kBase64(blob) {
+    try {
+        // Create AudioContext to decode the blob
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Read blob as ArrayBuffer
+        const arrayBuffer = await blob.arrayBuffer();
+        
+        // Decode audio data
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        // Create OfflineAudioContext to resample to 16kHz mono
+        const targetSampleRate = 16000;
+        const offlineContext = new OfflineAudioContext(
+            1, // mono
+            audioBuffer.duration * targetSampleRate,
+            targetSampleRate
+        );
+        
+        // Create buffer source
+        const source = offlineContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(offlineContext.destination);
+        source.start(0);
+        
+        // Render the audio
+        const renderedBuffer = await offlineContext.startRendering();
+        
+        // Convert to 16-bit PCM WAV format
+        const wavData = encodeWAV(renderedBuffer);
+        
+        // Convert to base64
+        const base64 = arrayBufferToBase64(wavData);
+        
+        console.log('✅ Successfully converted audio to 16kHz 16-bit PCM WAV');
+        
+        return base64;
+    } catch (error) {
+        console.error('❌ Error converting to WAV:', error);
+        throw error;
+    }
+}
+
+/**
+ * Encode AudioBuffer to WAV format (RIFF header + 16-bit PCM samples)
+ * @param {AudioBuffer} audioBuffer - The audio buffer to encode
+ * @returns {ArrayBuffer} WAV file data
+ */
+function encodeWAV(audioBuffer) {
+    const numChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+    
+    // Get audio data (mono)
+    const samples = audioBuffer.getChannelData(0);
+    const numSamples = samples.length;
+    
+    // Calculate sizes
+    const bytesPerSample = bitDepth / 8;
+    const dataSize = numSamples * bytesPerSample;
+    const bufferSize = 44 + dataSize; // 44 bytes for WAV header
+    
+    // Create buffer
+    const buffer = new ArrayBuffer(bufferSize);
+    const view = new DataView(buffer);
+    
+    // Write WAV header
+    let offset = 0;
+    
+    // "RIFF" chunk descriptor
+    writeString(view, offset, 'RIFF'); offset += 4;
+    view.setUint32(offset, bufferSize - 8, true); offset += 4; // File size - 8
+    writeString(view, offset, 'WAVE'); offset += 4;
+    
+    // "fmt " sub-chunk
+    writeString(view, offset, 'fmt '); offset += 4;
+    view.setUint32(offset, 16, true); offset += 4; // Subchunk size
+    view.setUint16(offset, format, true); offset += 2; // Audio format (PCM)
+    view.setUint16(offset, 1, true); offset += 2; // Number of channels (mono)
+    view.setUint32(offset, sampleRate, true); offset += 4; // Sample rate
+    view.setUint32(offset, sampleRate * bytesPerSample, true); offset += 4; // Byte rate
+    view.setUint16(offset, bytesPerSample, true); offset += 2; // Block align
+    view.setUint16(offset, bitDepth, true); offset += 2; // Bits per sample
+    
+    // "data" sub-chunk
+    writeString(view, offset, 'data'); offset += 4;
+    view.setUint32(offset, dataSize, true); offset += 4;
+    
+    // Write PCM samples
+    const volume = 0.8; // Prevent clipping
+    for (let i = 0; i < numSamples; i++) {
+        const sample = Math.max(-1, Math.min(1, samples[i] * volume));
+        const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(offset, int16, true);
+        offset += 2;
+    }
+    
+    return buffer;
+}
+
+/**
+ * Write string to DataView
+ * @param {DataView} view - DataView to write to
+ * @param {number} offset - Offset in the buffer
+ * @param {string} string - String to write
+ */
+function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+    }
+}
+
+/**
+ * Convert ArrayBuffer to base64 string
+ * @param {ArrayBuffer} buffer - Buffer to convert
+ * @returns {string} Base64 encoded string
+ */
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+/**
+ * Convert blob to base64 string (fallback method)
  * @param {Blob} blob - Audio blob
  * @returns {Promise<string>} Base64 encoded audio data
  */
