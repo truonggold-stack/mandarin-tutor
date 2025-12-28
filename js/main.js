@@ -16,6 +16,9 @@ import { saveGames, loadGames, saveProgress, loadProgress, saveGameResult } from
 export function initializeApp() {
     console.log('🚀 Initializing Mandarin Tutor...');
     
+    // Clear saved translations from previous session
+    clearTranslations();
+    
     // Initialize all modules
     initializeAudio();
     const translations = initializeTranslation();
