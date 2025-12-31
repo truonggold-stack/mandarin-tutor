@@ -251,6 +251,32 @@ export function savePronunciationScore(scoreData) {
 }
 
 /**
+ * Clear all pronunciation scores for a specific lesson
+ * @param {string} lessonId - The ID of the lesson to clear
+ * @returns {boolean} Success status
+ */
+export function clearLessonPronunciationHistory(lessonId) {
+    try {
+        const progress = loadProgress();
+        
+        if (!progress.pronunciationScores || progress.pronunciationScores.length === 0) {
+            return true;
+        }
+        
+        // Filter out all scores for this lesson
+        progress.pronunciationScores = progress.pronunciationScores.filter(
+            score => score.lessonId !== lessonId
+        );
+        
+        saveProgress(progress);
+        return true;
+    } catch (error) {
+        console.error('Failed to clear lesson pronunciation history:', error);
+        return false;
+    }
+}
+
+/**
  * Get pronunciation scores grouped by lesson
  * Returns last 10 lessons with their tasks
  * @returns {Array} Array of lessons with their task scores

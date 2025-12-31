@@ -280,7 +280,10 @@ export function displayPronunciationProgress() {
             
             return `
                 <div class="pronunciation-lesson-group">
-                    <h4 class="pronunciation-lesson-title">${lesson.lessonName}</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 class="pronunciation-lesson-title" style="margin: 0;">${lesson.lessonName}</h4>
+                        <button class="clear-lesson-btn" data-lesson-id="${lesson.lessonId}" style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">Clear History</button>
+                    </div>
                     <table class="pronunciation-table">
                         <thead>
                             <tr>
@@ -303,6 +306,21 @@ export function displayPronunciationProgress() {
                 ${lessonsHtml}
             </div>
         `;
+        
+        // Add event listeners for clear buttons
+        const clearButtons = container.querySelectorAll('.clear-lesson-btn');
+        clearButtons.forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const lessonId = e.target.dataset.lessonId;
+                const lessonName = e.target.parentElement.querySelector('.pronunciation-lesson-title').textContent;
+                
+                if (confirm(`Are you sure you want to clear all pronunciation history for "${lessonName}"?`)) {
+                    const { clearLessonPronunciationHistory } = await import('./storage.js');
+                    clearLessonPronunciationHistory(lessonId);
+                    displayPronunciationProgress(); // Refresh the display
+                }
+            });
+        });
     }).catch(error => {
         console.error('Failed to display pronunciation progress:', error);
         container.innerHTML = '<p class="empty-state">Error loading pronunciation progress</p>';
