@@ -11,12 +11,15 @@ import { switchTab, displayTranslationResult, displaySavedTranslations, displayL
 import { saveGames, loadGames, saveProgress, loadProgress, saveGameResult } from './storage.js';
 
 const SHARED_LESSONS_URL = '/data/shared-lessons.json';
+const SHARED_LESSONS_LAST_SYNC_KEY = 'sharedLessonsLastSyncAt';
 
 /**
  * Initialize the application
  */
 export async function initializeApp() {
     console.log('🚀 Initializing Mandarin Tutor...');
+
+    renderLastSharedSyncTime();
     
     // Clear saved translations from previous session
     clearTranslations();
@@ -211,6 +214,7 @@ async function loadSharedLessonsFromRepo() {
         const result = importLessons(sharedData, { mode: 'merge' });
 
         if (result.success) {
+            setLastSharedSyncTime(new Date().toISOString());
             showLessonSyncStatus(
                 `Synced from GitHub shared file. Total lessons: ${result.totalCount}.`,
                 'info'
@@ -265,6 +269,48 @@ function showLessonSyncStatus(message, type = 'info') {
     statusEl.classList.remove('success', 'error', 'info');
     statusEl.classList.add(type);
     statusEl.style.display = 'block';
+}
+
+/**
+ * Save last shared lessons sync timestamp and update UI.
+ * @param {string} isoTimestamp - ISO timestamp string
+ */
+function setLastSharedSyncTime(isoTimestamp) {
+    try {
+        localStorage.setItem(SHARED_LESSONS_LAST_SYNC_KEY, isoTimestamp);
+    } catch (error) {
+        console.warn('Unable to save shared sync timestamp:', error);
+    }
+    renderLastSharedSyncTime();
+}
+
+/**
+ * Render last shared lessons sync time if available.
+ */
+function renderLastSharedSyncTime() {
+    const lastSyncEl = document.getElementById('lesson-sync-last');
+    if (!lastSyncEl) return;
+
+    let timestamp = null;
+    try {
+        timestamp = localStorage.getItem(SHARED_LESSONS_LAST_SYNC_KEY);
+    } catch (error) {
+        console.warn('Unable to read shared sync timestamp:', error);
+    }
+
+    if (!timestamp) {
+        lastSyncEl.style.display = 'none';
+        return;
+    }
+
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) {
+        lastSyncEl.style.display = 'none';
+        return;
+    }
+
+    lastSyncEl.textContent = `Last synced from GitHub: ${date.toLocaleString()}`;
+    lastSyncEl.style.display = 'block';
 }
 
 /**

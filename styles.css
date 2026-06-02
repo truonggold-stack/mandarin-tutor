@@ -198,6 +198,12 @@ body {
     color: #4b5563;
 }
 
+.lesson-sync-last {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
 .lesson-sync-status {
     margin-top: 10px;
     padding: 8px 10px;
