@@ -4,16 +4,18 @@
 import { sampleLessons } from './config.js';
 import { initializeAudio, speakChinese, speakEnglish } from './audio.js';
 import { initializeTranslation, translateWord, addTranslation, getTranslations, clearTranslations, deleteTranslation } from './translation.js';
-import { initializeLessons, createLesson, getLessons, getLesson, deleteLesson } from './lessons.js';
+import { initializeLessons, createLesson, getLessons, getLesson, deleteLesson, exportAllLessons, importLessons } from './lessons.js';
 import { initializePractice, loadLesson as loadPracticeLesson, getCurrentExercise, nextExercise, previousExercise, playReference, startPracticeRecording, stopPracticeRecording, isPracticeRecording, assessPronunciationWithAzure, generatePronunciationScore, savePronunciationRating, getCurrentLessonInfo } from './practice.js';
 import { startNewGame, startCustomGame, getGameState, shuffleArray, handleDrop, handleDragStart, playPairAudio, endGame, isGameActive } from './game.js';
 import { switchTab, displayTranslationResult, displaySavedTranslations, displayLessonList, populateLessonSelector, displayExercise, toggleExerciseContainer, updateProgressDisplay, displaySavedGames, renderGameBoard, updateGameStats, hideGameResult, showGameResult } from './ui.js';
 import { saveGames, loadGames, saveProgress, loadProgress, saveGameResult } from './storage.js';
 
+const SHARED_LESSONS_URL = '/data/shared-lessons.json';
+
 /**
  * Initialize the application
  */
-export function initializeApp() {
+export async function initializeApp() {
     console.log('🚀 Initializing Mandarin Tutor...');
     
     // Clear saved translations from previous session
@@ -34,6 +36,12 @@ export function initializeApp() {
         sampleLessons.forEach(lesson => {
             createLesson(lesson.name, lesson.exercises);
         });
+        lessons = getLessons();
+    }
+
+    // Merge shared lessons file if present (used for GitHub -> Netlify sync)
+    const syncResult = await loadSharedLessonsFromRepo();
+    if (syncResult.updated) {
         lessons = getLessons();
     }
     
@@ -127,6 +135,9 @@ function setupEventListeners() {
     // Game
     const newGameBtn = document.getElementById('new-game-btn');
     const playAgainBtn = document.getElementById('play-again-btn');
+    const exportLessonsBtn = document.getElementById('export-lessons-btn');
+    const importLessonsBtn = document.getElementById('import-lessons-btn');
+    const importLessonsFile = document.getElementById('import-lessons-file');
     
     if (newGameBtn) {
         newGameBtn.addEventListener('click', () => {
@@ -141,6 +152,119 @@ function setupEventListeners() {
             initializeNewGame(difficulty);
         });
     }
+
+    if (exportLessonsBtn) {
+        exportLessonsBtn.addEventListener('click', () => {
+            exportLessonsToFile();
+        });
+    }
+
+    if (importLessonsBtn && importLessonsFile) {
+        importLessonsBtn.addEventListener('click', () => {
+            importLessonsFile.click();
+        });
+
+        importLessonsFile.addEventListener('change', async (event) => {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const result = importLessons(text, { mode: 'merge' });
+
+                if (!result.success) {
+                    showLessonSyncStatus(`Import failed: ${result.message}`, 'error');
+                    return;
+                }
+
+                const lessons = getLessons();
+                displayLessonList(lessons);
+                populateLessonSelector(lessons);
+                showLessonSyncStatus(
+                    `Imported successfully. Total lessons: ${result.totalCount}.`,
+                    'success'
+                );
+            } catch (error) {
+                console.error('Failed to import lesson file:', error);
+                showLessonSyncStatus(`Import failed: ${error.message}`, 'error');
+            } finally {
+                importLessonsFile.value = '';
+            }
+        });
+    }
+}
+
+/**
+ * Load shared lessons from repository file and merge into local lessons.
+ * This enables GitHub-pushed data to auto-load on Netlify deploys.
+ */
+async function loadSharedLessonsFromRepo() {
+    try {
+        const response = await fetch(`${SHARED_LESSONS_URL}?t=${Date.now()}`, { cache: 'no-store' });
+
+        if (!response.ok) {
+            // File may not exist yet, which is fine.
+            return { updated: false };
+        }
+
+        const sharedData = await response.json();
+        const result = importLessons(sharedData, { mode: 'merge' });
+
+        if (result.success) {
+            showLessonSyncStatus(
+                `Synced from GitHub shared file. Total lessons: ${result.totalCount}.`,
+                'info'
+            );
+            return { updated: true };
+        }
+
+        showLessonSyncStatus(`Shared sync skipped: ${result.message}`, 'error');
+        return { updated: false };
+    } catch (error) {
+        console.warn('Shared lesson sync unavailable:', error);
+        return { updated: false };
+    }
+}
+
+/**
+ * Export current lessons to a JSON file intended for GitHub sync.
+ */
+function exportLessonsToFile() {
+    try {
+        const json = exportAllLessons();
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = 'shared-lessons.json';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+
+        showLessonSyncStatus(
+            'Exported shared-lessons.json. Commit it to data/shared-lessons.json in GitHub.',
+            'success'
+        );
+    } catch (error) {
+        console.error('Failed to export lessons:', error);
+        showLessonSyncStatus(`Export failed: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Show status for lesson sync/import/export actions.
+ * @param {string} message - Status message
+ * @param {string} type - success, error, or info
+ */
+function showLessonSyncStatus(message, type = 'info') {
+    const statusEl = document.getElementById('lesson-sync-status');
+    if (!statusEl) return;
+
+    statusEl.textContent = message;
+    statusEl.classList.remove('success', 'error', 'info');
+    statusEl.classList.add(type);
+    statusEl.style.display = 'block';
 }
 
 /**

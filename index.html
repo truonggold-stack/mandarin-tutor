@@ -71,6 +71,17 @@
                 <div class="saved-translations" style="margin-top: 40px;">
                     <h3>📚 My Lessons</h3>
                     <p class="section-description">Manage your created lessons</p>
+                    <div class="lesson-sync-panel">
+                        <div class="lesson-sync-actions">
+                            <button class="btn-secondary" id="export-lessons-btn">⬇️ Export Lessons JSON</button>
+                            <button class="btn-secondary" id="import-lessons-btn">⬆️ Import Lessons JSON</button>
+                        </div>
+                        <input type="file" id="import-lessons-file" accept="application/json,.json" style="display: none;" />
+                        <p class="lesson-sync-help">
+                            For Netlify auto-load: export and commit the file as <strong>data/shared-lessons.json</strong> in GitHub.
+                        </p>
+                        <p id="lesson-sync-status" class="lesson-sync-status" style="display: none;"></p>
+                    </div>
                     <div id="lesson-list" class="translations-list"></div>
                 </div>
             </div>

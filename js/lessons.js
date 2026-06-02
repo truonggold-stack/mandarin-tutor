@@ -7,12 +7,64 @@ import { saveLessons, loadLessons } from './storage.js';
 let lessons = [];
 
 /**
+ * Validate and normalize lesson structure
+ * @param {Object} lesson - Raw lesson object
+ * @returns {Object|null} Normalized lesson or null if invalid
+ */
+function normalizeLesson(lesson) {
+    if (!lesson || typeof lesson !== 'object') return null;
+
+    const lessonName = typeof lesson.name === 'string' ? lesson.name.trim() : '';
+    if (!lessonName) return null;
+
+    if (!Array.isArray(lesson.exercises) || lesson.exercises.length === 0) return null;
+
+    const normalizedExercises = lesson.exercises
+        .map(ex => {
+            if (!ex || typeof ex !== 'object') return null;
+
+            const chinese = typeof ex.chinese === 'string' ? ex.chinese.trim() : '';
+            const pinyin = typeof ex.pinyin === 'string' ? ex.pinyin.trim() : '';
+            const english = typeof ex.english === 'string' ? ex.english.trim() : '';
+
+            if (!chinese || !pinyin || !english) return null;
+
+            return {
+                chinese,
+                pinyin,
+                english,
+                audioUrl: ex.audioUrl || null,
+                ratings: Array.isArray(ex.ratings) ? ex.ratings : []
+            };
+        })
+        .filter(Boolean);
+
+    if (normalizedExercises.length === 0) return null;
+
+    return {
+        id: typeof lesson.id === 'string' && lesson.id.trim() ? lesson.id : `lesson-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+        name: lessonName,
+        date: lesson.date || new Date().toISOString(),
+        exercises: normalizedExercises
+    };
+}
+
+/**
  * Initialize lessons module
  * @returns {Array} Array of lessons
  */
 export function initializeLessons() {
     lessons = loadLessons();
     return lessons;
+}
+
+/**
+ * Replace in-memory lessons and persist to localStorage
+ * @param {Array} nextLessons - Normalized lessons array
+ */
+function replaceLessons(nextLessons) {
+    lessons = nextLessons;
+    saveLessons(lessons);
 }
 
 /**
@@ -232,6 +284,14 @@ export function exportLesson(lessonId) {
 }
 
 /**
+ * Export all lessons as JSON
+ * @returns {string} JSON string of all lessons
+ */
+export function exportAllLessons() {
+    return JSON.stringify(lessons, null, 2);
+}
+
+/**
  * Import lesson from JSON
  * @param {string} jsonData - JSON string of lesson
  * @returns {Object|null} Imported lesson or null if failed
@@ -248,5 +308,74 @@ export function importLesson(jsonData) {
     } catch (error) {
         console.error('Failed to import lesson:', error);
         return null;
+    }
+}
+
+/**
+ * Import multiple lessons from JSON string or array
+ * @param {string|Array} sourceData - JSON string or lesson array
+ * @param {Object} options - Import options
+ * @param {string} options.mode - 'merge' (default) or 'replace'
+ * @returns {Object} Import result summary
+ */
+export function importLessons(sourceData, options = {}) {
+    const mode = options.mode || 'merge';
+
+    try {
+        const parsed = typeof sourceData === 'string' ? JSON.parse(sourceData) : sourceData;
+        const incomingArray = Array.isArray(parsed) ? parsed : [parsed];
+        const normalizedIncoming = incomingArray.map(normalizeLesson).filter(Boolean);
+
+        if (normalizedIncoming.length === 0) {
+            return {
+                success: false,
+                importedCount: 0,
+                skippedCount: incomingArray.length,
+                totalCount: lessons.length,
+                message: 'No valid lessons found in import file.'
+            };
+        }
+
+        if (mode === 'replace') {
+            replaceLessons(normalizedIncoming);
+            return {
+                success: true,
+                importedCount: normalizedIncoming.length,
+                skippedCount: incomingArray.length - normalizedIncoming.length,
+                totalCount: lessons.length,
+                message: `Replaced lessons with ${normalizedIncoming.length} imported lesson(s).`
+            };
+        }
+
+        // Merge mode: keep existing, upsert by lesson id.
+        const mergedById = new Map(lessons.map(lesson => [lesson.id, lesson]));
+        normalizedIncoming.forEach(lesson => {
+            mergedById.set(lesson.id, lesson);
+        });
+
+        const beforeCount = lessons.length;
+        const mergedLessons = Array.from(mergedById.values());
+        replaceLessons(mergedLessons);
+
+        const importedCount = mergedLessons.length - beforeCount >= 0
+            ? mergedLessons.length - beforeCount
+            : normalizedIncoming.length;
+
+        return {
+            success: true,
+            importedCount,
+            skippedCount: incomingArray.length - normalizedIncoming.length,
+            totalCount: lessons.length,
+            message: `Merged ${normalizedIncoming.length} lesson(s).`
+        };
+    } catch (error) {
+        console.error('Failed to import lessons:', error);
+        return {
+            success: false,
+            importedCount: 0,
+            skippedCount: 0,
+            totalCount: lessons.length,
+            message: error.message || 'Import failed.'
+        };
     }
 }

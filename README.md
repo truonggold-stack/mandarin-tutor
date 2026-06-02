@@ -176,6 +176,27 @@ All data is stored locally in the browser using `localStorage`:
 - `savedTranslations`: Translation history
 - `progressData`: Learning statistics
 
+### Syncing Lessons Through GitHub + Netlify
+
+The app now supports lesson export/import plus automatic shared lesson loading from:
+
+- `data/shared-lessons.json`
+
+How it works:
+
+1. In the app, go to **Translate → My Lessons**.
+2. Click **Export Lessons JSON** (downloads `shared-lessons.json`).
+3. Replace the repository file at `data/shared-lessons.json` with the exported file.
+4. Commit and push to GitHub.
+5. Netlify deploys the update automatically.
+6. On load, the deployed app fetches and merges `data/shared-lessons.json` into browser lessons.
+
+Notes:
+
+- Sync is merge-based by lesson id, so shared lessons can update existing ones.
+- Browser-local lessons still remain local unless exported and committed.
+- You can also use **Import Lessons JSON** to merge a file directly into your current browser.
+
 ### Key Features
 - **300+ Word Dictionary**: Comprehensive vocabulary across multiple categories
 - **Responsive Design**: Works on desktop and mobile devices
