@@ -185,11 +185,16 @@ The app now supports lesson export/import plus automatic shared lesson loading f
 How it works:
 
 1. In the app, go to **Translate → My Lessons**.
-2. Click **Export Lessons JSON** (downloads `shared-lessons.json`).
-3. Replace the repository file at `data/shared-lessons.json` with the exported file.
-4. Commit and push to GitHub.
-5. Netlify deploys the update automatically.
-6. On load, the deployed app fetches and merges `data/shared-lessons.json` into browser lessons.
+2. (Localhost) Click **Publish Lessons (Local)** to write lessons directly to `data/shared-lessons.json`.
+3. Commit and push to GitHub.
+4. Netlify deploys the update automatically.
+5. On load, the deployed app fetches and merges `data/shared-lessons.json` into browser lessons.
+
+Alternative manual method:
+
+1. Click **Export Lessons JSON** (downloads `shared-lessons.json`).
+2. Replace the repository file at `data/shared-lessons.json` with the exported file.
+3. Commit and push to GitHub.
 
 Notes:
 

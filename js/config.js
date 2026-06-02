@@ -7,7 +7,8 @@
 // API Endpoints - these will be serverless functions
 export const apiEndpoints = {
     speechAssessment: '/api/speech-assessment',
-    translate: '/api/translate'
+    translate: '/api/translate',
+    saveSharedLessons: '/api/save-shared-lessons'
 };
 
 // When running locally, use localhost

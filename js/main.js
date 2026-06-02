@@ -1,7 +1,7 @@
 // Main Module
 // Application orchestration and initialization
 
-import { sampleLessons } from './config.js';
+import { sampleLessons, apiEndpoints, getApiUrl } from './config.js';
 import { initializeAudio, speakChinese, speakEnglish } from './audio.js';
 import { initializeTranslation, translateWord, addTranslation, getTranslations, clearTranslations, deleteTranslation } from './translation.js';
 import { initializeLessons, createLesson, getLessons, getLesson, deleteLesson, exportAllLessons, importLessons } from './lessons.js';
@@ -19,6 +19,7 @@ const SHARED_LESSONS_LAST_SYNC_KEY = 'sharedLessonsLastSyncAt';
 export async function initializeApp() {
     console.log('🚀 Initializing Mandarin Tutor...');
 
+    configureLocalPublishControls();
     renderLastSharedSyncTime();
     
     // Clear saved translations from previous session
@@ -138,6 +139,7 @@ function setupEventListeners() {
     // Game
     const newGameBtn = document.getElementById('new-game-btn');
     const playAgainBtn = document.getElementById('play-again-btn');
+    const publishLessonsBtn = document.getElementById('publish-lessons-btn');
     const exportLessonsBtn = document.getElementById('export-lessons-btn');
     const importLessonsBtn = document.getElementById('import-lessons-btn');
     const importLessonsFile = document.getElementById('import-lessons-file');
@@ -153,6 +155,12 @@ function setupEventListeners() {
         playAgainBtn.addEventListener('click', () => {
             const difficulty = document.getElementById('difficulty-select').value;
             initializeNewGame(difficulty);
+        });
+    }
+
+    if (publishLessonsBtn) {
+        publishLessonsBtn.addEventListener('click', async () => {
+            await publishLessonsToSharedFile();
         });
     }
 
@@ -194,6 +202,65 @@ function setupEventListeners() {
                 importLessonsFile.value = '';
             }
         });
+    }
+}
+
+/**
+ * Show local-only publish controls when running the local development server.
+ */
+function configureLocalPublishControls() {
+    const publishLessonsBtn = document.getElementById('publish-lessons-btn');
+    if (!publishLessonsBtn) return;
+
+    const isLocalhost = window.location.hostname === 'localhost';
+    publishLessonsBtn.style.display = isLocalhost ? 'inline-flex' : 'none';
+}
+
+/**
+ * Persist current lessons into data/shared-lessons.json via local API.
+ */
+async function publishLessonsToSharedFile() {
+    const publishLessonsBtn = document.getElementById('publish-lessons-btn');
+    const lessons = getLessons();
+
+    if (!lessons.length) {
+        showLessonSyncStatus('No lessons available to publish yet.', 'error');
+        return;
+    }
+
+    const originalText = publishLessonsBtn ? publishLessonsBtn.textContent : '';
+    if (publishLessonsBtn) {
+        publishLessonsBtn.disabled = true;
+        publishLessonsBtn.textContent = '🚀 Publishing...';
+    }
+
+    try {
+        const response = await fetch(getApiUrl(apiEndpoints.saveSharedLessons), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ lessons })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Publish failed');
+        }
+
+        showLessonSyncStatus(
+            `Published ${result.lessonCount} lessons to data/shared-lessons.json. Now run git add/commit/push.`,
+            'success'
+        );
+    } catch (error) {
+        console.error('Failed to publish lessons locally:', error);
+        showLessonSyncStatus(`Publish failed: ${error.message}`, 'error');
+    } finally {
+        if (publishLessonsBtn) {
+            publishLessonsBtn.disabled = false;
+            publishLessonsBtn.textContent = originalText;
+        }
     }
 }
 

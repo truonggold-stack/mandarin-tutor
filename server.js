@@ -329,10 +329,77 @@ async function handleApiRequest(req, res, pathname) {
             }
         });
 
+    } else if (pathname === '/api/save-shared-lessons') {
+        if (req.method !== 'POST') {
+            res.writeHead(405, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Method not allowed' }));
+            return;
+        }
+
+        // Security guard: only allow local requests to write repository files.
+        if (!isLocalRequest(req)) {
+            res.writeHead(403, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                success: false,
+                error: 'Forbidden: local access only'
+            }));
+            return;
+        }
+
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                const incomingLessons = data.lessons;
+
+                if (!Array.isArray(incomingLessons)) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({
+                        success: false,
+                        error: 'Missing lessons array'
+                    }));
+                    return;
+                }
+
+                const targetPath = path.join(__dirname, 'data', 'shared-lessons.json');
+                fs.writeFileSync(targetPath, JSON.stringify(incomingLessons, null, 2) + '\n', 'utf8');
+
+                console.log(`✅ Saved ${incomingLessons.length} shared lesson(s) to data/shared-lessons.json`);
+
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    success: true,
+                    lessonCount: incomingLessons.length,
+                    filePath: 'data/shared-lessons.json'
+                }));
+            } catch (error) {
+                console.error('❌ Failed to save shared lessons:', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    success: false,
+                    error: error.message
+                }));
+            }
+        });
+
     } else {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'API endpoint not found' }));
     }
+}
+
+/**
+ * Restrict privileged API calls to local loopback requests only.
+ */
+function isLocalRequest(req) {
+    const remoteAddress = req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : '';
+    return remoteAddress === '127.0.0.1'
+        || remoteAddress === '::1'
+        || remoteAddress === '::ffff:127.0.0.1';
 }
 
 /**
