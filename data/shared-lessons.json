@@ -1,1 +1,298 @@
-[]
+[
+  {
+    "id": "lesson-1763092820062",
+    "name": "Basic Greetings",
+    "date": "2025-11-14T04:00:20.062Z",
+    "exercises": [
+      {
+        "chinese": "你好",
+        "pinyin": "nǐ hǎo",
+        "english": "Hello",
+        "audioUrl": null,
+        "ratings": []
+      },
+      {
+        "chinese": "再见",
+        "pinyin": "zài jiàn",
+        "english": "Goodbye",
+        "audioUrl": null,
+        "ratings": []
+      },
+      {
+        "chinese": "谢谢",
+        "pinyin": "xiè xiè",
+        "english": "Thank you",
+        "audioUrl": null,
+        "ratings": []
+      },
+      {
+        "chinese": "对不起",
+        "pinyin": "duì bù qǐ",
+        "english": "Sorry",
+        "audioUrl": null,
+        "ratings": []
+      },
+      {
+        "chinese": "请",
+        "pinyin": "qǐng",
+        "english": "Please",
+        "audioUrl": null,
+        "ratings": []
+      }
+    ]
+  },
+  {
+    "id": "lesson-1780371018572",
+    "name": "Body parts",
+    "date": "2026-06-02T03:30:18.572Z",
+    "exercises": [
+      {
+        "chinese": "眼睛",
+        "pinyin": "yǎnjīng",
+        "english": "eyes",
+        "audioUrl": null,
+        "ratings": [
+          {
+            "stars": 5,
+            "tone": 98,
+            "clarity": 94,
+            "notes": "🌟 Nice! Good pronunciation.",
+            "date": "2026-06-02T03:31:06.311Z"
+          },
+          {
+            "stars": 1,
+            "tone": 0,
+            "clarity": 0,
+            "notes": "🎯 Keep going! Try again!",
+            "date": "2026-06-02T03:31:20.592Z"
+          }
+        ]
+      },
+      {
+        "chinese": "头",
+        "pinyin": "tóu",
+        "english": "head",
+        "audioUrl": null,
+        "ratings": [
+          {
+            "stars": 1,
+            "tone": 36,
+            "clarity": 60,
+            "notes": "🎯 Keep practicing — you will improve!",
+            "date": "2026-06-02T03:32:49.977Z"
+          },
+          {
+            "stars": 3,
+            "tone": 67,
+            "clarity": 64,
+            "notes": "😊 Good effort! Some tones need work.",
+            "date": "2026-06-02T03:32:59.116Z"
+          },
+          {
+            "stars": 3,
+            "tone": 61,
+            "clarity": 74,
+            "notes": "😊 Good effort! Some tones need work.",
+            "date": "2026-06-02T03:33:12.892Z"
+          }
+        ]
+      },
+      {
+        "chinese": "头发",
+        "pinyin": "tóu fa",
+        "english": "hair",
+        "audioUrl": null,
+        "ratings": [
+          {
+            "stars": 5,
+            "tone": 91,
+            "clarity": 97,
+            "notes": "🌟 Nice! Good pronunciation.",
+            "date": "2026-06-02T03:33:43.032Z"
+          }
+        ]
+      },
+      {
+        "chinese": "耳朵",
+        "pinyin": "ěrduo",
+        "english": "ears",
+        "audioUrl": null,
+        "ratings": [
+          {
+            "stars": 3,
+            "tone": 81,
+            "clarity": 72,
+            "notes": "😊 Good effort! Some tones need work.",
+            "date": "2026-06-02T03:34:03.652Z"
+          },
+          {
+            "stars": 3,
+            "tone": 89,
+            "clarity": 74,
+            "notes": "😊 Good effort! Some tones need work.",
+            "date": "2026-06-02T03:34:11.472Z"
+          },
+          {
+            "stars": 5,
+            "tone": 87,
+            "clarity": 94,
+            "notes": "🌟 Nice! Good pronunciation.",
+            "date": "2026-06-02T03:34:24.387Z"
+          }
+        ]
+      },
+      {
+        "chinese": "嘴巴",
+        "pinyin": "zuǐ ba",
+        "english": "mouth",
+        "audioUrl": null,
+        "ratings": [
+          {
+            "stars": 4,
+            "tone": 91,
+            "clarity": 89,
+            "notes": "🌟 Nice! Good pronunciation.",
+            "date": "2026-06-02T03:34:41.425Z"
+          },
+          {
+            "stars": 3,
+            "tone": 68,
+            "clarity": 69,
+            "notes": "😊 Good effort! Some tones need work.",
+            "date": "2026-06-02T03:35:04.620Z"
+          },
+          {
+            "stars": 3,
+            "tone": 87,
+            "clarity": 70,
+            "notes": "😊 Good effort! Some tones need work.",
+            "date": "2026-06-02T03:35:14.867Z"
+          },
+          {
+            "stars": 3,
+            "tone": 76,
+            "clarity": 62,
+            "notes": "😊 Good effort! Some tones need work.",
+            "date": "2026-06-02T03:35:30.629Z"
+          },
+          {
+            "stars": 2,
+            "tone": 53,
+            "clarity": 68,
+            "notes": "🎯 Keep practicing — you will improve!",
+            "date": "2026-06-02T03:35:36.540Z"
+          }
+        ]
+      },
+      {
+        "chinese": "脚",
+        "pinyin": "jiǎo",
+        "english": "foot",
+        "audioUrl": null,
+        "ratings": [
+          {
+            "stars": 4,
+            "tone": 99,
+            "clarity": 92,
+            "notes": "🌟 Nice! Good pronunciation.",
+            "date": "2026-06-02T03:35:57.720Z"
+          },
+          {
+            "stars": 3,
+            "tone": 86,
+            "clarity": 77,
+            "notes": "😊 Good effort! Some tones need work.",
+            "date": "2026-06-02T03:36:00.289Z"
+          },
+          {
+            "stars": 1,
+            "tone": 53,
+            "clarity": 47,
+            "notes": "🎯 Keep practicing — you will improve!",
+            "date": "2026-06-02T03:36:02.800Z"
+          },
+          {
+            "stars": 5,
+            "tone": 97,
+            "clarity": 98,
+            "notes": "🌟 Perfect! Excellent pronunciation!",
+            "date": "2026-06-02T03:36:24.851Z"
+          },
+          {
+            "stars": 5,
+            "tone": 88,
+            "clarity": 89,
+            "notes": "🌟 Nice! Good pronunciation.",
+            "date": "2026-06-02T03:36:32.725Z"
+          }
+        ]
+      },
+      {
+        "chinese": "腿",
+        "pinyin": "tuǐ",
+        "english": "leg",
+        "audioUrl": null,
+        "ratings": [
+          {
+            "stars": 5,
+            "tone": 94,
+            "clarity": 96,
+            "notes": "🌟 Perfect! Excellent pronunciation!",
+            "date": "2026-06-02T03:36:51.486Z"
+          }
+        ]
+      },
+      {
+        "chinese": "手",
+        "pinyin": "shǒu",
+        "english": "hand",
+        "audioUrl": null,
+        "ratings": [
+          {
+            "stars": 4,
+            "tone": 72,
+            "clarity": 83,
+            "notes": "👍 Great job! Very close to perfect!",
+            "date": "2026-06-02T03:37:11.980Z"
+          },
+          {
+            "stars": 1,
+            "tone": 46,
+            "clarity": 9,
+            "notes": "🎯 Keep going! Try again!",
+            "date": "2026-06-02T03:37:17.405Z"
+          },
+          {
+            "stars": 5,
+            "tone": 87,
+            "clarity": 92,
+            "notes": "🌟 Perfect! Excellent pronunciation!",
+            "date": "2026-06-02T03:37:28.825Z"
+          },
+          {
+            "stars": 5,
+            "tone": 87,
+            "clarity": 92,
+            "notes": "🌟 Perfect! Excellent pronunciation!",
+            "date": "2026-06-02T03:37:33.049Z"
+          }
+        ]
+      },
+      {
+        "chinese": "鼻子",
+        "pinyin": "bí zi",
+        "english": "nose",
+        "audioUrl": null,
+        "ratings": [
+          {
+            "stars": 5,
+            "tone": 98,
+            "clarity": 99,
+            "notes": "🌟 Perfect! Excellent pronunciation!",
+            "date": "2026-06-02T03:37:49.399Z"
+          }
+        ]
+      }
+    ]
+  }
+]
