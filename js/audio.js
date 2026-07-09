@@ -9,6 +9,28 @@ let recordedChunks = [];
 let recordedMimeType = '';
 
 /**
+ * Ensure audio context exists and is running.
+ * @returns {AudioContext|null} Active audio context
+ */
+function getActiveAudioContext() {
+    if (!audioContext) {
+        initializeAudio();
+    }
+
+    if (!audioContext) {
+        return null;
+    }
+
+    if (audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => {
+            // Ignore resume failures; caller handles null-like behavior.
+        });
+    }
+
+    return audioContext;
+}
+
+/**
  * Initialize audio context
  */
 export function initializeAudio() {
@@ -215,4 +237,45 @@ export function getAvailableVoices() {
 export function getChineseVoices() {
     const voices = getAvailableVoices();
     return voices.filter(voice => voice.lang.startsWith('zh'));
+}
+
+/**
+ * Play simple synthesized game sound effects.
+ * @param {'hit'|'miss'} type - Sound effect type
+ */
+export function playGameSfx(type) {
+    const ctx = getActiveAudioContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+
+    const createTone = (frequency, duration, gainValue, waveType = 'sine', start = 0) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = waveType;
+        osc.frequency.setValueAtTime(frequency, now + start);
+
+        gain.gain.setValueAtTime(0.0001, now + start);
+        gain.gain.exponentialRampToValueAtTime(gainValue, now + start + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + start);
+        osc.stop(now + start + duration + 0.02);
+    };
+
+    if (type === 'hit') {
+        // Bright two-note pop/chime
+        createTone(680, 0.11, 0.11, 'triangle', 0);
+        createTone(940, 0.16, 0.09, 'sine', 0.06);
+        return;
+    }
+
+    if (type === 'miss') {
+        // Gentle low "boop" for misses
+        createTone(240, 0.14, 0.08, 'sine', 0);
+    }
 }

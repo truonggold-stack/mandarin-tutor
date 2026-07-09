@@ -2,7 +2,7 @@
 // Application orchestration and initialization
 
 import { sampleLessons, apiEndpoints, getApiUrl } from './config.js';
-import { initializeAudio, speakChinese, speakEnglish } from './audio.js';
+import { initializeAudio, speakChinese, speakEnglish, playGameSfx } from './audio.js';
 import { initializeTranslation, translateWord, addTranslation, getTranslations, clearTranslations, deleteTranslation } from './translation.js';
 import { initializeLessons, createLesson, getLessons, getLesson, deleteLesson, exportAllLessons, importLessons } from './lessons.js';
 import { initializePractice, loadLesson as loadPracticeLesson, getCurrentExercise, nextExercise, previousExercise, playReference, startPracticeRecording, stopPracticeRecording, isPracticeRecording, assessPronunciationWithAzure, generatePronunciationScore, savePronunciationRating, getCurrentLessonInfo } from './practice.js';
@@ -1053,6 +1053,8 @@ function processBalloonShotResult(selectedPairId, balloonEl) {
     const isCorrect = selectedPairId === currentPairId;
 
     if (!isCorrect) {
+        playGameSfx('miss');
+
         if (balloonEl) {
             balloonEl.classList.add('miss');
             setTimeout(() => balloonEl.classList.remove('miss'), 350);
@@ -1067,6 +1069,8 @@ function processBalloonShotResult(selectedPairId, balloonEl) {
     if (currentAttempts === 0) {
         balloonGameState.firstTryMatches += 1;
     }
+
+    playGameSfx('hit');
 
     if (balloonEl) {
         balloonEl.classList.add('popped');
