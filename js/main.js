@@ -7,11 +7,15 @@ import { initializeTranslation, translateWord, addTranslation, getTranslations, 
 import { initializeLessons, createLesson, getLessons, getLesson, deleteLesson, exportAllLessons, importLessons } from './lessons.js';
 import { initializePractice, loadLesson as loadPracticeLesson, getCurrentExercise, nextExercise, previousExercise, playReference, startPracticeRecording, stopPracticeRecording, isPracticeRecording, assessPronunciationWithAzure, generatePronunciationScore, savePronunciationRating, getCurrentLessonInfo } from './practice.js';
 import { startNewGame, startCustomGame, getGameState, shuffleArray, handleDrop, handleDragStart, playPairAudio, endGame, isGameActive } from './game.js';
-import { switchTab, displayTranslationResult, displaySavedTranslations, displayLessonList, populateLessonSelector, displayExercise, toggleExerciseContainer, updateProgressDisplay, displaySavedGames, renderGameBoard, updateGameStats, hideGameResult, showGameResult } from './ui.js';
+import { switchTab, displayTranslationResult, displaySavedTranslations, displayLessonList, populateLessonSelector, populateGameLessonSelector, displayExercise, toggleExerciseContainer, updateProgressDisplay, displaySavedGames, renderGameBoard, renderBalloonBoard, updateGameStats, hideGameResult, showGameResult } from './ui.js';
 import { saveGames, loadGames, saveProgress, loadProgress, saveGameResult } from './storage.js';
 
 const SHARED_LESSONS_URL = '/data/shared-lessons.json';
 const SHARED_LESSONS_LAST_SYNC_KEY = 'sharedLessonsLastSyncAt';
+const MAX_BALLOON_OPTIONS = 5;
+
+let activeMatchPollingInterval = null;
+let balloonGameState = null;
 
 /**
  * Initialize the application
@@ -53,6 +57,7 @@ export async function initializeApp() {
     displaySavedTranslations(translations);
     displayLessonList(lessons);
     populateLessonSelector(lessons);
+    populateGameLessonSelector(lessons);
     updateProgressDisplay(progress);
     
     // Setup event listeners
@@ -143,18 +148,27 @@ function setupEventListeners() {
     const exportLessonsBtn = document.getElementById('export-lessons-btn');
     const importLessonsBtn = document.getElementById('import-lessons-btn');
     const importLessonsFile = document.getElementById('import-lessons-file');
+    const gamePhraseSource = document.getElementById('game-phrase-source');
+    const gameLessonSelect = document.getElementById('game-lesson-select');
+
+    if (gamePhraseSource && gameLessonSelect) {
+        gamePhraseSource.addEventListener('change', () => {
+            const useLesson = gamePhraseSource.value === 'lesson';
+            gameLessonSelect.disabled = !useLesson;
+        });
+    }
     
     if (newGameBtn) {
         newGameBtn.addEventListener('click', () => {
             const difficulty = document.getElementById('difficulty-select').value;
-            initializeNewGame(difficulty);
+            startSelectedGame(difficulty);
         });
     }
     
     if (playAgainBtn) {
         playAgainBtn.addEventListener('click', () => {
             const difficulty = document.getElementById('difficulty-select').value;
-            initializeNewGame(difficulty);
+            startSelectedGame(difficulty);
         });
     }
 
@@ -191,6 +205,7 @@ function setupEventListeners() {
                 const lessons = getLessons();
                 displayLessonList(lessons);
                 populateLessonSelector(lessons);
+                populateGameLessonSelector(lessons);
                 showLessonSyncStatus(
                     `Imported successfully. Total lessons: ${result.totalCount}.`,
                     'success'
@@ -203,6 +218,121 @@ function setupEventListeners() {
             }
         });
     }
+}
+
+/**
+ * Start either matching or balloon game based on selected mode.
+ * @param {string} difficulty - Selected game difficulty
+ */
+function startSelectedGame(difficulty) {
+    const phraseSourceEl = document.getElementById('game-phrase-source');
+    const lessonSelectEl = document.getElementById('game-lesson-select');
+    const modeSelect = document.getElementById('game-mode-select');
+    const phraseSource = phraseSourceEl ? phraseSourceEl.value : 'random';
+    const selectedLessonId = lessonSelectEl ? lessonSelectEl.value : '';
+    const selectedMode = modeSelect ? modeSelect.value : 'matching';
+
+    if (phraseSource === 'lesson') {
+        const lesson = getLesson(selectedLessonId);
+        if (!lesson) {
+            alert('Please select a lesson phrase set first.');
+            return;
+        }
+
+        const lessonPairs = mapLessonExercisesToPairs(lesson.exercises || []);
+        if (lessonPairs.length < 2) {
+            alert('This lesson needs at least 2 phrases for game practice.');
+            return;
+        }
+
+        if (selectedMode === 'balloon') {
+            initializeCustomBalloonGame(lessonPairs);
+            return;
+        }
+
+        initializeCustomMatchingGame(lessonPairs);
+        return;
+    }
+
+    if (selectedMode === 'balloon') {
+        initializeBalloonGame(difficulty);
+        return;
+    }
+
+    initializeNewGame(difficulty);
+}
+
+/**
+ * Convert lesson exercises into game pair format.
+ * @param {Array} exercises - Lesson exercise list
+ * @returns {Array} Normalized game pairs
+ */
+function mapLessonExercisesToPairs(exercises) {
+    return exercises
+        .filter(exercise => exercise && exercise.english && exercise.chinese)
+        .map((exercise, index) => ({
+            id: index,
+            english: String(exercise.english).trim(),
+            chinese: String(exercise.chinese).trim(),
+            pinyin: exercise.pinyin ? String(exercise.pinyin).trim() : '',
+            emoji: '🎈'
+        }));
+}
+
+/**
+ * Render and start matching mode for a fixed phrase set.
+ * @param {Array} pairs - Pair set to practice
+ */
+function initializeCustomMatchingGame(pairs) {
+    stopBalloonGame();
+    stopMatchPolling();
+    hideGameResult();
+
+    const gamePairs = startCustomGame(pairs);
+    const chinesePairs = shuffleArray([...gamePairs]);
+    const imagePairs = shuffleArray([...gamePairs]);
+
+    renderGameBoard(chinesePairs, imagePairs);
+    setupDragAndDrop();
+
+    updateGameStats({
+        moveCount: 0,
+        matchedPairs: 0,
+        totalPairs: gamePairs.length,
+        formattedTime: '0:00'
+    });
+
+    startMatchingProgressPolling();
+}
+
+/**
+ * Poll and finalize matching games.
+ */
+function startMatchingProgressPolling() {
+    activeMatchPollingInterval = setInterval(() => {
+        if (!isGameActive()) return;
+
+        const state = getGameState();
+
+        updateGameStats({
+            moveCount: state.moveCount,
+            matchedPairs: state.matchedPairs,
+            totalPairs: state.pairs.length,
+            formattedTime: state.formattedTime
+        });
+
+        if (!state.isComplete) return;
+
+        const result = endGame();
+        showGameScoreModal(result);
+        saveGameResult(result);
+        triggerConfetti();
+        showGameResult({
+            time: result.formattedTime,
+            moves: result.moveCount
+        });
+        stopMatchPolling();
+    }, 100);
 }
 
 /**
@@ -385,6 +515,9 @@ function renderLastSharedSyncTime() {
  * @param {string} difficulty - Game difficulty level
  */
 function initializeNewGame(difficulty) {
+    stopBalloonGame();
+    stopMatchPolling();
+
     // Hide any previous game result
     hideGameResult();
     
@@ -410,45 +543,587 @@ function initializeNewGame(difficulty) {
     });
     
     // Set up game completion monitoring AFTER the game starts
-    let gameTimerInterval = setInterval(() => {
-        if (isGameActive()) {
-            const state = getGameState();
-            
-            updateGameStats({
-                moveCount: state.moveCount,
-                matchedPairs: state.matchedPairs,
-                totalPairs: state.pairs.length,
-                formattedTime: state.formattedTime
-            });
-            
-            // Check if game is complete
-            if (state.isComplete) {
-                console.log('🎉 TIMER DETECTED GAME COMPLETE! matchedPairs:', state.matchedPairs, '/', state.pairs.length);
-                const result = endGame();
-                console.log('📊 Game result object:', result);
-                
-                // Show game score modal with confetti
-                showGameScoreModal(result);
-                console.log('✅ Score modal shown');
-                
-                // Save game result to progress
-                const saved = saveGameResult(result);
-                console.log('💾 Game result saved:', saved);
-                
-                // Trigger confetti
-                triggerConfetti();
-                console.log('🎊 Confetti triggered');
-                
-                showGameResult({
-                    time: result.formattedTime,
-                    moves: result.moveCount
-                });
-                
-                // Stop checking after game is complete
-                clearInterval(gameTimerInterval);
-            }
+    startMatchingProgressPolling();
+}
+
+/**
+ * Stop active polling for matching game completion.
+ */
+function stopMatchPolling() {
+    if (activeMatchPollingInterval) {
+        clearInterval(activeMatchPollingInterval);
+        activeMatchPollingInterval = null;
+    }
+}
+
+/**
+ * Initialize balloon shooter game mode.
+ * @param {string} difficulty - Game difficulty level
+ */
+function initializeBalloonGame(difficulty) {
+    stopBalloonGame();
+    stopMatchPolling();
+    hideGameResult();
+
+    const pairs = startNewGame(difficulty);
+    const displayLanguageSelect = document.getElementById('balloon-display-language');
+
+    const displayLanguage = displayLanguageSelect ? displayLanguageSelect.value : 'english';
+    const promptLanguage = getOppositeLanguage(displayLanguage);
+
+    balloonGameState = {
+        pairs,
+        remainingPairIds: pairs.map(pair => pair.id),
+        currentPairId: null,
+        options: [],
+        attemptsByPair: new Map(),
+        firstTryMatches: 0,
+        moveCount: 0,
+        matchedPairs: 0,
+        gameStartTime: Date.now(),
+        displayLanguage,
+        promptLanguage,
+        isShotLocked: false,
+        isAiming: false,
+        aimPointerId: null,
+        activeArrow: null,
+        targets: [],
+        animationFrameId: null,
+        stageWidth: 0,
+        stageHeight: 0,
+        ticker: null
+    };
+
+    updateGameStats({
+        moveCount: 0,
+        matchedPairs: 0,
+        totalPairs: pairs.length,
+        formattedTime: '0:00'
+    });
+
+    renderNextBalloonRound();
+    balloonGameState.ticker = setInterval(updateBalloonStats, 250);
+}
+
+/**
+ * Initialize balloon shooter mode using a saved/custom pair set.
+ * @param {Array} pairs - Pair objects to play with
+ */
+function initializeCustomBalloonGame(pairs) {
+    stopBalloonGame();
+    stopMatchPolling();
+    hideGameResult();
+
+    const displayLanguageSelect = document.getElementById('balloon-display-language');
+
+    const displayLanguage = displayLanguageSelect ? displayLanguageSelect.value : 'english';
+    const promptLanguage = getOppositeLanguage(displayLanguage);
+
+    balloonGameState = {
+        pairs,
+        remainingPairIds: pairs.map(pair => pair.id),
+        currentPairId: null,
+        options: [],
+        attemptsByPair: new Map(),
+        firstTryMatches: 0,
+        moveCount: 0,
+        matchedPairs: 0,
+        gameStartTime: Date.now(),
+        displayLanguage,
+        promptLanguage,
+        isShotLocked: false,
+        isAiming: false,
+        aimPointerId: null,
+        activeArrow: null,
+        targets: [],
+        animationFrameId: null,
+        stageWidth: 0,
+        stageHeight: 0,
+        ticker: null
+    };
+
+    updateGameStats({
+        moveCount: 0,
+        matchedPairs: 0,
+        totalPairs: pairs.length,
+        formattedTime: '0:00'
+    });
+
+    renderNextBalloonRound();
+    balloonGameState.ticker = setInterval(updateBalloonStats, 250);
+}
+
+/**
+ * Stop active balloon game timer and state.
+ */
+function stopBalloonGame() {
+    if (!balloonGameState) return;
+    if (balloonGameState.ticker) {
+        clearInterval(balloonGameState.ticker);
+    }
+    if (balloonGameState.animationFrameId) {
+        cancelAnimationFrame(balloonGameState.animationFrameId);
+    }
+    balloonGameState = null;
+}
+
+/**
+ * Format elapsed time in MM:SS.
+ * @param {number} elapsedSeconds - Elapsed seconds
+ * @returns {string} Formatted time
+ */
+function formatElapsed(elapsedSeconds) {
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+/**
+ * Return the opposite language for cross-language listening rounds.
+ * @param {string} displayLanguage - Current balloon display language
+ * @returns {string} Opposite language for spoken prompt
+ */
+function getOppositeLanguage(displayLanguage) {
+    return displayLanguage === 'mandarin' ? 'english' : 'mandarin';
+}
+
+/**
+ * Update game stats while balloon game is active.
+ */
+function updateBalloonStats() {
+    if (!balloonGameState) return;
+    const elapsedSeconds = Math.floor((Date.now() - balloonGameState.gameStartTime) / 1000);
+    updateGameStats({
+        moveCount: balloonGameState.moveCount,
+        matchedPairs: balloonGameState.matchedPairs,
+        totalPairs: balloonGameState.pairs.length,
+        formattedTime: formatElapsed(elapsedSeconds)
+    });
+}
+
+/**
+ * Build and render the next balloon question round.
+ */
+function renderNextBalloonRound() {
+    if (!balloonGameState) return;
+
+    if (balloonGameState.remainingPairIds.length === 0) {
+        finishBalloonGame();
+        return;
+    }
+
+    const remaining = [...balloonGameState.remainingPairIds];
+    const currentPairId = remaining[Math.floor(Math.random() * remaining.length)];
+    const currentPair = balloonGameState.pairs.find(pair => pair.id === currentPairId);
+
+    const distractors = shuffleArray(
+        balloonGameState.pairs.filter(pair => pair.id !== currentPairId)
+    ).slice(0, Math.max(0, Math.min(MAX_BALLOON_OPTIONS - 1, balloonGameState.pairs.length - 1)));
+
+    const options = shuffleArray([currentPair, ...distractors]);
+
+    balloonGameState.currentPairId = currentPairId;
+    balloonGameState.options = options;
+    balloonGameState.attemptsByPair.set(currentPairId, 0);
+
+    renderBalloonBoard({
+        options,
+        displayLanguage: balloonGameState.displayLanguage,
+        roundNumber: balloonGameState.matchedPairs + 1,
+        totalRounds: balloonGameState.pairs.length
+    });
+
+    setupBalloonInteractions();
+    speakBalloonPrompt();
+}
+
+/**
+ * Speak current round prompt.
+ */
+function speakBalloonPrompt() {
+    if (!balloonGameState) return;
+    const currentPair = balloonGameState.pairs.find(pair => pair.id === balloonGameState.currentPairId);
+    if (!currentPair) return;
+
+    if (balloonGameState.promptLanguage === 'mandarin') {
+        speakChinese(currentPair.chinese);
+        return;
+    }
+
+    speakEnglish(currentPair.english);
+}
+
+/**
+ * Wire click handlers for balloon targets.
+ */
+function setupBalloonInteractions() {
+    const listenBtn = document.getElementById('balloon-listen-btn');
+    if (listenBtn) {
+        listenBtn.addEventListener('click', speakBalloonPrompt);
+    }
+
+    initializeBalloonTargets();
+    bindShooterControls();
+    startBalloonAnimationLoop();
+}
+
+/**
+ * Initialize moving target positions for the current round.
+ */
+function initializeBalloonTargets() {
+    if (!balloonGameState) return;
+    const stage = document.getElementById('balloon-stage');
+    if (!stage) return;
+
+    balloonGameState.stageWidth = stage.clientWidth;
+    balloonGameState.stageHeight = stage.clientHeight;
+    balloonGameState.targets = [];
+
+    const balloons = Array.from(stage.querySelectorAll('.balloon'));
+    const spacing = balloonGameState.stageWidth / (balloons.length + 1);
+    const minY = 80;
+    const maxY = Math.max(120, balloonGameState.stageHeight - 210);
+
+    balloons.forEach((el, index) => {
+        const baseX = spacing * (index + 1);
+        const jitterX = (Math.random() - 0.5) * 36;
+        const x = Math.max(64, Math.min(balloonGameState.stageWidth - 64, baseX + jitterX));
+        const y = minY + Math.random() * (maxY - minY);
+        const vx = (Math.random() - 0.5) * 0.07;
+        const vy = (Math.random() - 0.5) * 0.03;
+
+        const target = {
+            el,
+            pairId: Number(el.dataset.pairId),
+            x,
+            y,
+            vx,
+            vy,
+            radius: 54,
+            wobbleSeed: Math.random() * Math.PI * 2,
+            wobbleTime: 0
+        };
+
+        balloonGameState.targets.push(target);
+        renderBalloonTarget(target);
+    });
+}
+
+/**
+ * Position one balloon target element.
+ * @param {Object} target - Moving target object
+ */
+function renderBalloonTarget(target) {
+    target.el.style.transform = `translate(${target.x - 60}px, ${target.y - 60}px)`;
+}
+
+/**
+ * Bind hold/aim/release shooter controls.
+ */
+function bindShooterControls() {
+    if (!balloonGameState) return;
+
+    const stage = document.getElementById('balloon-stage');
+    const aimGuide = document.getElementById('aim-guide');
+    const bow = document.getElementById('bow-weapon');
+    if (!stage || !aimGuide || !bow) return;
+
+    const bowOrigin = () => ({
+        x: balloonGameState.stageWidth / 2,
+        y: balloonGameState.stageHeight - 36
+    });
+
+    const updateAimGuide = (x, y) => {
+        const origin = bowOrigin();
+        const dx = x - origin.x;
+        const dy = y - origin.y;
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        const length = Math.max(35, Math.min(230, Math.sqrt((dx * dx) + (dy * dy))));
+
+        aimGuide.style.left = `${origin.x}px`;
+        aimGuide.style.top = `${origin.y}px`;
+        aimGuide.style.width = `${length}px`;
+        aimGuide.style.transform = `rotate(${angle}deg)`;
+        bow.style.transform = `rotate(${Math.max(-85, Math.min(-8, angle))}deg)`;
+    };
+
+    const onPointerDown = (event) => {
+        if (!balloonGameState || balloonGameState.isShotLocked) return;
+
+        balloonGameState.isAiming = true;
+        balloonGameState.aimPointerId = event.pointerId;
+        stage.setPointerCapture(event.pointerId);
+        aimGuide.classList.add('active');
+
+        const rect = stage.getBoundingClientRect();
+        updateAimGuide(event.clientX - rect.left, event.clientY - rect.top);
+    };
+
+    const onPointerMove = (event) => {
+        if (!balloonGameState || !balloonGameState.isAiming) return;
+        if (balloonGameState.aimPointerId !== event.pointerId) return;
+
+        const rect = stage.getBoundingClientRect();
+        updateAimGuide(event.clientX - rect.left, event.clientY - rect.top);
+    };
+
+    const onPointerUp = (event) => {
+        if (!balloonGameState || !balloonGameState.isAiming) return;
+        if (balloonGameState.aimPointerId !== event.pointerId) return;
+
+        const rect = stage.getBoundingClientRect();
+        const releaseX = event.clientX - rect.left;
+        const releaseY = event.clientY - rect.top;
+        fireArrow(releaseX, releaseY);
+
+        balloonGameState.isAiming = false;
+        balloonGameState.aimPointerId = null;
+        aimGuide.classList.remove('active');
+        bow.style.transform = 'rotate(-28deg)';
+        stage.releasePointerCapture(event.pointerId);
+    };
+
+    stage.addEventListener('pointerdown', onPointerDown);
+    stage.addEventListener('pointermove', onPointerMove);
+    stage.addEventListener('pointerup', onPointerUp);
+    stage.addEventListener('pointercancel', onPointerUp);
+}
+
+/**
+ * Launch one arrow using release direction.
+ * @param {number} releaseX - Release x position in stage coords
+ * @param {number} releaseY - Release y position in stage coords
+ */
+function fireArrow(releaseX, releaseY) {
+    if (!balloonGameState || balloonGameState.isShotLocked) return;
+
+    const originX = balloonGameState.stageWidth / 2;
+    const originY = balloonGameState.stageHeight - 36;
+    const dx = releaseX - originX;
+    const dy = releaseY - originY;
+    const distance = Math.sqrt((dx * dx) + (dy * dy));
+    const clampedDistance = Math.max(45, Math.min(240, distance));
+    const angle = Math.atan2(dy, dx);
+    const speed = 0.7 + (clampedDistance / 260);
+
+    balloonGameState.isShotLocked = true;
+    balloonGameState.activeArrow = {
+        x: originX,
+        y: originY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        angle
+    };
+}
+
+/**
+ * Start per-frame updates for targets and active arrow.
+ */
+function startBalloonAnimationLoop() {
+    if (!balloonGameState) return;
+
+    if (balloonGameState.animationFrameId) {
+        cancelAnimationFrame(balloonGameState.animationFrameId);
+    }
+
+    let previousTime = performance.now();
+    const tick = (now) => {
+        if (!balloonGameState) return;
+
+        const deltaMs = Math.min(34, now - previousTime);
+        previousTime = now;
+
+        updateMovingTargets(deltaMs);
+        updateArrowPhysics(deltaMs);
+
+        balloonGameState.animationFrameId = requestAnimationFrame(tick);
+    };
+
+    balloonGameState.animationFrameId = requestAnimationFrame(tick);
+}
+
+/**
+ * Animate floating target movement.
+ * @param {number} deltaMs - Frame delta in ms
+ */
+function updateMovingTargets(deltaMs) {
+    if (!balloonGameState) return;
+
+    const minX = 64;
+    const maxX = balloonGameState.stageWidth - 64;
+    const minY = 70;
+    const maxY = Math.max(120, balloonGameState.stageHeight - 220);
+
+    balloonGameState.targets.forEach(target => {
+        target.wobbleTime += deltaMs;
+        target.x += target.vx * deltaMs;
+        target.y += (target.vy * deltaMs) + (Math.sin((target.wobbleTime / 260) + target.wobbleSeed) * 0.6);
+
+        if (target.x < minX || target.x > maxX) {
+            target.vx *= -1;
+            target.x = Math.max(minX, Math.min(maxX, target.x));
         }
-    }, 100);
+
+        if (target.y < minY || target.y > maxY) {
+            target.vy *= -1;
+            target.y = Math.max(minY, Math.min(maxY, target.y));
+        }
+
+        renderBalloonTarget(target);
+    });
+}
+
+/**
+ * Move arrow and resolve hit/miss events.
+ * @param {number} deltaMs - Frame delta in ms
+ */
+function updateArrowPhysics(deltaMs) {
+    if (!balloonGameState || !balloonGameState.activeArrow) {
+        renderArrow(null);
+        return;
+    }
+
+    const arrow = document.getElementById('flying-arrow');
+    if (!arrow) return;
+
+    const gravity = 0.0018;
+    const arrowState = balloonGameState.activeArrow;
+    arrowState.x += arrowState.vx * deltaMs;
+    arrowState.y += arrowState.vy * deltaMs;
+    arrowState.vy += gravity * deltaMs;
+    arrowState.angle = Math.atan2(arrowState.vy, arrowState.vx);
+
+    renderArrow(arrowState);
+
+    const hitTarget = balloonGameState.targets.find(target => {
+        const dx = target.x - arrowState.x;
+        const dy = target.y - arrowState.y;
+        return Math.sqrt((dx * dx) + (dy * dy)) <= target.radius;
+    });
+
+    if (hitTarget) {
+        balloonGameState.activeArrow = null;
+        processBalloonShotResult(hitTarget.pairId, hitTarget.el);
+        return;
+    }
+
+    const outOfBounds = (
+        arrowState.x < -40 ||
+        arrowState.x > balloonGameState.stageWidth + 40 ||
+        arrowState.y < -40 ||
+        arrowState.y > balloonGameState.stageHeight + 40
+    );
+
+    if (outOfBounds) {
+        balloonGameState.activeArrow = null;
+        processBalloonShotResult(null, null);
+    }
+}
+
+/**
+ * Draw arrow element at current physics position.
+ * @param {Object|null} arrowState - Active arrow state
+ */
+function renderArrow(arrowState) {
+    const arrow = document.getElementById('flying-arrow');
+    if (!arrow) return;
+
+    if (!arrowState) {
+        arrow.style.transform = 'translate(-9999px, -9999px) rotate(-30deg)';
+        return;
+    }
+
+    const angleDeg = arrowState.angle * (180 / Math.PI);
+    arrow.style.transform = `translate(${arrowState.x}px, ${arrowState.y}px) rotate(${angleDeg}deg)`;
+}
+
+/**
+ * Resolve shot outcome for hit or miss with no penalties.
+ * @param {number|null} selectedPairId - Hit pair id, or null for miss
+ * @param {HTMLElement|null} balloonEl - Hit balloon element
+ */
+function processBalloonShotResult(selectedPairId, balloonEl) {
+    if (!balloonGameState) return;
+
+    const currentPairId = balloonGameState.currentPairId;
+    const currentAttempts = balloonGameState.attemptsByPair.get(currentPairId) || 0;
+    balloonGameState.attemptsByPair.set(currentPairId, currentAttempts + 1);
+    balloonGameState.moveCount += 1;
+
+    const isCorrect = selectedPairId === currentPairId;
+
+    if (!isCorrect) {
+        if (balloonEl) {
+            balloonEl.classList.add('miss');
+            setTimeout(() => balloonEl.classList.remove('miss'), 350);
+        }
+
+        speakBalloonPrompt();
+        updateBalloonStats();
+        balloonGameState.isShotLocked = false;
+        return;
+    }
+
+    if (currentAttempts === 0) {
+        balloonGameState.firstTryMatches += 1;
+    }
+
+    if (balloonEl) {
+        balloonEl.classList.add('popped');
+    }
+
+    balloonGameState.matchedPairs += 1;
+    balloonGameState.remainingPairIds = balloonGameState.remainingPairIds.filter(id => id !== currentPairId);
+    updateBalloonStats();
+
+    setTimeout(() => {
+        renderNextBalloonRound();
+        if (balloonGameState) {
+            balloonGameState.isShotLocked = false;
+        }
+    }, 320);
+}
+
+/**
+ * Complete balloon game and save result.
+ */
+function finishBalloonGame() {
+    if (!balloonGameState) return;
+
+    const elapsedSeconds = Math.floor((Date.now() - balloonGameState.gameStartTime) / 1000);
+    const totalPairs = balloonGameState.pairs.length;
+    const accuracy = balloonGameState.moveCount > 0
+        ? Math.round((balloonGameState.matchedPairs / balloonGameState.moveCount) * 100)
+        : 0;
+    const firstTryAccuracy = totalPairs > 0
+        ? Math.round((balloonGameState.firstTryMatches / totalPairs) * 100)
+        : 0;
+    const timeBonus = Math.max(0, 100 - elapsedSeconds);
+    const score = Math.round((accuracy * 0.7) + (timeBonus * 0.3));
+
+    const result = {
+        totalPairs,
+        matchedPairs: balloonGameState.matchedPairs,
+        remainingPairs: 0,
+        moveCount: balloonGameState.moveCount,
+        firstTryMatches: balloonGameState.firstTryMatches,
+        firstTryAccuracy,
+        elapsedTime: elapsedSeconds,
+        formattedTime: formatElapsed(elapsedSeconds),
+        accuracy,
+        score,
+        completed: true
+    };
+
+    stopBalloonGame();
+
+    showGameScoreModal(result);
+    saveGameResult(result);
+    triggerConfetti();
+    showGameResult({
+        time: result.formattedTime,
+        moves: result.moveCount
+    });
 }
 
 /**
@@ -911,6 +1586,7 @@ function setupGlobalFunctions() {
                 const lessons = getLessons();
                 displayLessonList(lessons);
                 populateLessonSelector(lessons);
+                populateGameLessonSelector(lessons);
                 alert('Lesson deleted successfully!');
             }
         }
@@ -950,6 +1626,7 @@ function setupGlobalFunctions() {
         const lessons = getLessons();
         populateLessonSelector(lessons);
         displayLessonList(lessons);
+        populateGameLessonSelector(lessons);
         
         alert(`✅ Lesson "${lessonName}" created with ${translations.length} exercises!`);
         
@@ -1023,27 +1700,29 @@ function setupGlobalFunctions() {
         
         // Hide any previous game result
         hideGameResult();
-        
-        // Start the custom game
-        const pairs = startCustomGame(game.pairs);
-        
-        // Shuffle pairs for display
-        const chinesePairs = shuffleArray([...pairs]);
-        const imagePairs = shuffleArray([...pairs]);
-        
-        // Render game board
-        renderGameBoard(chinesePairs, imagePairs);
-        
-        // Set up drag and drop
-        setupDragAndDrop();
-        
-        // Initialize stats
-        updateGameStats({
-            moveCount: 0,
-            matchedPairs: 0,
-            totalPairs: pairs.length,
-            formattedTime: '0:00'
-        });
+
+        const modeSelect = document.getElementById('game-mode-select');
+        const selectedMode = modeSelect ? modeSelect.value : 'matching';
+
+        if (selectedMode === 'balloon') {
+            const normalizedPairs = game.pairs.map((pair, idx) => ({
+                id: idx,
+                english: pair.english,
+                chinese: pair.chinese,
+                pinyin: pair.pinyin,
+                emoji: pair.emoji || '📝'
+            }));
+            initializeCustomBalloonGame(normalizedPairs);
+        } else {
+            const normalizedPairs = game.pairs.map((pair, idx) => ({
+                id: idx,
+                english: pair.english,
+                chinese: pair.chinese,
+                pinyin: pair.pinyin,
+                emoji: pair.emoji || '📝'
+            }));
+            initializeCustomMatchingGame(normalizedPairs);
+        }
         
         // Scroll to game board
         document.getElementById('game-board').scrollIntoView({ behavior: 'smooth' });

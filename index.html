@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mandarin Tutor - 中文导师</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260708a">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     
@@ -199,8 +199,8 @@
         <!-- Matching Game Tab -->
         <div class="tab-content" id="game-tab">
             <div class="game-section">
-                <h2>� Matching Card Game</h2>
-                <p class="section-description">Match Chinese characters with their English meanings. Click cards to hear pronunciation!</p>
+                <h2>🎯 Mandarin Game Arena</h2>
+                <p class="section-description">Pick a mode: classic matching or balloon shooter listening rounds.</p>
                 
                 <div class="game-controls">
                     <div class="game-info">
@@ -226,6 +226,37 @@
                         <option value="easy">Easy (3 pairs)</option>
                         <option value="medium" selected>Medium (6 pairs)</option>
                         <option value="hard">Hard (9 pairs)</option>
+                    </select>
+                </div>
+
+                <div class="difficulty-selector">
+                    <label>Mode:</label>
+                    <select id="game-mode-select">
+                        <option value="matching" selected>Matching Cards</option>
+                        <option value="balloon">Balloon Shooter</option>
+                    </select>
+                </div>
+
+                <div class="difficulty-selector">
+                    <label>Phrase Set:</label>
+                    <select id="game-phrase-source">
+                        <option value="random" selected>Random Dictionary Set</option>
+                        <option value="lesson">Selected Lesson Set</option>
+                    </select>
+                </div>
+
+                <div class="difficulty-selector">
+                    <label>Lesson:</label>
+                    <select id="game-lesson-select" disabled>
+                        <option value="">Select a lesson...</option>
+                    </select>
+                </div>
+
+                <div class="difficulty-selector">
+                    <label>Balloon Text:</label>
+                    <select id="balloon-display-language">
+                        <option value="english" selected>English</option>
+                        <option value="mandarin">Mandarin (中文)</option>
                     </select>
                 </div>
 

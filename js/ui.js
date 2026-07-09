@@ -109,6 +109,24 @@ export function populateLessonSelector(lessons) {
 }
 
 /**
+ * Populate game lesson selector dropdown
+ * @param {Array} lessons - Array of lesson objects
+ */
+export function populateGameLessonSelector(lessons) {
+    const select = document.getElementById('game-lesson-select');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Select a lesson...</option>';
+
+    lessons.forEach(lesson => {
+        const option = document.createElement('option');
+        option.value = lesson.id;
+        option.textContent = `${lesson.name} (${lesson.exercises.length} phrases)`;
+        select.appendChild(option);
+    });
+}
+
+/**
  * Display exercise in practice mode
  * @param {Object} exercise - Exercise object
  * @param {number} index - Current index
@@ -379,6 +397,51 @@ export function renderGameBoard(chinesePairs, imagePairs) {
         `;
         imageContainer.appendChild(card);
     });
+}
+
+/**
+ * Render balloon shooter board
+ * @param {Object} round - Round details
+ * @param {Array} round.options - Answer options for current round
+ * @param {string} round.displayLanguage - 'english' or 'mandarin'
+ * @param {number} round.roundNumber - Current round number (1-based)
+ * @param {number} round.totalRounds - Total rounds in game
+ */
+export function renderBalloonBoard(round) {
+    const gameBoard = document.getElementById('game-board');
+    if (!gameBoard) return;
+
+    const listenLabel = round.displayLanguage === 'mandarin' ? 'Listen to English' : 'Listen to Mandarin';
+
+    gameBoard.innerHTML = `
+        <div class="balloon-game-board">
+            <div class="balloon-prompt-card">
+                <div class="balloon-round-label">Round ${round.roundNumber} of ${round.totalRounds}</div>
+                <h3 class="balloon-prompt-title">Shoot the right balloon</h3>
+                <p class="balloon-prompt-subtitle">${listenLabel} and choose the matching phrase in ${round.displayLanguage === 'mandarin' ? 'Mandarin' : 'English'}.</p>
+                <div class="balloon-prompt-text" id="balloon-prompt-text">🎧 Listen and shoot</div>
+                <button class="btn-secondary" id="balloon-listen-btn">🔊 Hear Prompt</button>
+            </div>
+            <div class="balloon-stage" id="balloon-stage">
+                ${round.options.map(option => {
+                    const text = round.displayLanguage === 'mandarin' ? option.chinese : option.english;
+                    return `
+                        <button class="balloon" data-pair-id="${option.id}">
+                            <span class="balloon-main">${text}</span>
+                        </button>
+                    `;
+                }).join('')}
+                <div class="aim-guide" id="aim-guide" aria-hidden="true"></div>
+                <div class="arrow-layer" aria-hidden="true">
+                    <div class="flying-arrow" id="flying-arrow">➶</div>
+                </div>
+                <div class="shooter-base" aria-hidden="true">
+                    <div class="bow" id="bow-weapon">🏹</div>
+                    <div class="aim-help">Point and shoot</div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 /**

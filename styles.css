@@ -1166,6 +1166,173 @@ body {
     text-transform: capitalize;
 }
 
+/* Balloon Shooter Styles */
+.balloon-game-board {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.balloon-prompt-card {
+    background: linear-gradient(135deg, #eef2ff 0%, #f8f9ff 100%);
+    border: 1px solid #d9e2ff;
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+}
+
+.balloon-round-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 6px;
+}
+
+.balloon-prompt-title {
+    font-size: 1.25rem;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.balloon-prompt-subtitle {
+    color: #5b6474;
+    margin-bottom: 10px;
+}
+
+.balloon-prompt-text {
+    font-size: 2rem;
+    margin-bottom: 12px;
+    color: #1f2937;
+    font-family: 'Noto Sans SC', sans-serif;
+}
+
+.balloon-stage {
+    position: relative;
+    min-height: 430px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #d9e2ff;
+    background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 70%, #e7eeff 100%);
+    padding-bottom: 86px;
+    cursor: crosshair;
+    user-select: none;
+}
+
+.balloon {
+    position: absolute;
+    z-index: 2;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle at 30% 30%, #9bb0ff, #667eea 62%, #4f63cd 100%);
+    border: 2px solid #4f63cd;
+    border-radius: 999px;
+    color: #fff;
+    padding: 16px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    transition: box-shadow 0.15s ease, filter 0.2s ease;
+    box-shadow: 0 8px 20px rgba(79, 99, 205, 0.35);
+}
+
+.balloon-main {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.balloon-sub {
+    font-size: 0.85rem;
+    opacity: 0.92;
+    text-align: center;
+}
+
+.balloon.popped {
+    animation: balloonPop 0.28s ease forwards;
+}
+
+.balloon.miss {
+    animation: balloonMiss 0.35s ease;
+}
+
+.aim-guide {
+    position: absolute;
+    left: 50%;
+    bottom: 28px;
+    width: 0;
+    height: 6px;
+    border-radius: 999px;
+    transform-origin: left center;
+    background: linear-gradient(90deg, rgba(43, 67, 196, 0.95), rgba(79, 99, 205, 0.25));
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.45), 0 2px 8px rgba(43, 67, 196, 0.35);
+    opacity: 0;
+    z-index: 4;
+    pointer-events: none;
+}
+
+.aim-guide.active {
+    opacity: 1;
+}
+
+.arrow-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4;
+}
+
+.flying-arrow {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-9999px, -9999px) rotate(-30deg);
+    font-size: 2.7rem;
+    opacity: 1;
+    filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.35));
+    pointer-events: none;
+}
+
+.shooter-base {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+}
+
+.bow {
+    font-size: 3.3rem;
+    line-height: 1;
+    transform: rotate(-28deg);
+    transition: transform 0.08s linear;
+    filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.25));
+}
+
+.aim-help {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #3347b6;
+}
+
+@keyframes balloonPop {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.12); }
+    100% { transform: scale(0); opacity: 0; }
+}
+
+@keyframes balloonMiss {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+}
+
 /* Additional styles for translation list */
 .chinese-lg {
     font-family: 'Noto Sans SC', sans-serif;
