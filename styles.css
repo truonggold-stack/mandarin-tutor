@@ -843,6 +843,24 @@ body {
     gap: 10px;
 }
 
+.game-settings-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.game-settings-row .difficulty-selector {
+    margin-bottom: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.game-settings-row .difficulty-selector select {
+    width: 100%;
+}
+
 .difficulty-selector label {
     font-weight: 500;
     color: #333;
@@ -1155,15 +1173,94 @@ body {
 }
 
 /* Image Card Styles */
-.image-card .card-emoji {
-    font-size: 4rem;
-    margin-bottom: 8px;
+
+.image-card .card-illustration-wrap {
+    width: 84px;
+    height: 84px;
+    margin: 0 auto 10px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 30% 25%, #fff7ed 0%, #ffedd5 65%, #fed7aa 100%);
+    border: 3px solid #ffffff;
+    outline: 1px solid rgba(251, 146, 60, 0.5);
+    box-shadow: 0 5px 14px rgba(217, 119, 6, 0.18);
+    position: relative;
+}
+
+.image-card .card-illustration {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 2px rgba(255, 255, 255, 0.7)) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.18));
+}
+
+.image-card .card-illustration-fallback {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #9a3412;
+    background: #ffedd5;
+    border: 1px dashed #fb923c;
 }
 
 .image-card .card-label {
     font-size: 0.85rem;
-    color: #666;
+    color: #4b5563;
+    font-weight: 600;
     text-transform: capitalize;
+}
+
+.image-card .card-content {
+    position: relative;
+    padding-top: 10px;
+}
+
+.image-card .card-badge {
+    position: absolute;
+    right: -3px;
+    top: -6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    padding: 3px 7px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.image-card.category-animal .card-illustration-wrap {
+    background: radial-gradient(circle at 30% 25%, #ecfccb 0%, #d9f99d 70%, #bef264 100%);
+}
+
+.image-card.category-food .card-illustration-wrap {
+    background: radial-gradient(circle at 30% 25%, #ffedd5 0%, #fed7aa 70%, #fdba74 100%);
+}
+
+.image-card.category-family .card-illustration-wrap {
+    background: radial-gradient(circle at 30% 25%, #fae8ff 0%, #f5d0fe 70%, #e9d5ff 100%);
+}
+
+.image-card.category-color .card-illustration-wrap {
+    background: radial-gradient(circle at 30% 25%, #e0f2fe 0%, #bae6fd 70%, #7dd3fc 100%);
+}
+
+.image-card.category-number .card-illustration-wrap {
+    background: radial-gradient(circle at 30% 25%, #fef9c3 0%, #fde68a 70%, #fcd34d 100%);
+}
+
+.image-card.category-daily .card-illustration-wrap {
+    background: radial-gradient(circle at 30% 25%, #ede9fe 0%, #ddd6fe 70%, #c4b5fd 100%);
 }
 
 /* Balloon Shooter Styles */
@@ -1223,8 +1320,8 @@ body {
     z-index: 2;
     width: 120px;
     height: 120px;
-    background: radial-gradient(circle at 30% 30%, #9bb0ff, #667eea 62%, #4f63cd 100%);
-    border: 2px solid #4f63cd;
+    background: radial-gradient(circle at 30% 30%, #fde68a, #f59e0b 62%, #d97706 100%);
+    border: 2px solid #d97706;
     border-radius: 999px;
     color: #fff;
     padding: 16px 10px;
@@ -1234,7 +1331,7 @@ body {
     justify-content: center;
     pointer-events: none;
     transition: box-shadow 0.15s ease, filter 0.2s ease;
-    box-shadow: 0 8px 20px rgba(79, 99, 205, 0.35);
+    box-shadow: 0 8px 20px rgba(217, 119, 6, 0.35);
 }
 
 .balloon-main {
@@ -2013,6 +2110,14 @@ body {
     .game-controls {
         flex-direction: column;
     }
+
+    .game-settings-row {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+    }
+
+    .game-settings-row .difficulty-selector {
+        margin-bottom: 0;
+    }
     
     .game-info {
         justify-content: center;
@@ -2263,5 +2368,295 @@ body {
 .pronunciation-table td:nth-child(4) {
     width: 20%;
     text-align: center;
+}
+
+/* Design System v1 overrides */
+:root {
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-pill: 9999px;
+    --radius-card: 16px;
+
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 40px;
+
+    --bg: #fff9f2;
+    --surface: #ffffff;
+    --surface-alt: #fff3e6;
+    --text-primary: #1f2937;
+    --text-secondary: #4b5563;
+    --border: #e5e7eb;
+
+    --primary: #f59e0b;
+    --primary-pressed: #d97706;
+    --primary-text: #111827;
+
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+
+    --reward-scale-from: 1;
+    --reward-scale-to: 1.18;
+    --reward-duration: 420ms;
+    --reward-glow: 0 0 0 8px rgba(245, 158, 11, 0.18);
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-raised: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    background:
+        radial-gradient(circle at 12% 10%, rgba(245, 158, 11, 0.16), transparent 32%),
+        radial-gradient(circle at 85% 2%, rgba(251, 191, 36, 0.2), transparent 35%),
+        linear-gradient(180deg, var(--bg) 0%, #fffdf9 60%, var(--surface-alt) 100%);
+    color: var(--text-primary);
+}
+
+.header h1,
+.subtitle,
+.section-description,
+.tab-btn,
+.game-stat .stat-label,
+.game-date,
+.empty-state {
+    color: var(--text-secondary);
+}
+
+.tab-content,
+.saved-game-card,
+.stat-card,
+.drag-card,
+.lesson-list-item,
+.result-card,
+.translation-input-area,
+.translation-result,
+.exercise-card,
+.game-controls,
+.game-column,
+.pronunciation-rating,
+.pronunciation-feedback,
+.balloon-stage,
+.balloon-prompt-card {
+    border-radius: var(--radius-card);
+}
+
+.tab-content,
+.saved-game-card,
+.stat-card,
+.drag-card,
+.lesson-list-item,
+.result-card,
+.exercise-card,
+.game-controls,
+.game-column,
+.balloon-prompt-card,
+.translation-item,
+.history-item,
+.game-history-item {
+    background: var(--surface);
+    border-color: var(--border);
+    box-shadow: var(--shadow-card);
+}
+
+.tab-btn,
+.btn-primary,
+.btn-secondary {
+    min-height: 56px;
+}
+
+.btn-primary,
+.btn-secondary {
+    border-radius: var(--radius-lg);
+    font-weight: 700;
+}
+
+.btn-primary {
+    background: linear-gradient(180deg, #fbbf24 0%, var(--primary) 60%, var(--primary-pressed) 100%);
+    border-color: var(--primary-pressed);
+    color: #fff;
+    box-shadow: 0 5px 14px rgba(245, 158, 11, 0.35);
+}
+
+.btn-primary:hover {
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.45);
+}
+
+.btn-primary:active {
+    background: var(--primary-pressed);
+}
+
+.btn-secondary {
+    background: #fff7ed;
+    color: var(--primary-pressed);
+    border-color: #fdba74;
+}
+
+.btn-secondary:hover {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.tab-btn.active,
+.exercise-counter,
+.stat-number,
+.game-stat .stat-value,
+.history-score,
+.game-result span,
+.analysis-value,
+.pinyin-text,
+.card-pinyin,
+.result-pinyin,
+.chinese-sm,
+.saved-translations h3,
+.translate-section h2,
+.practice-section h2,
+.game-section h2,
+.progress-section h2,
+.progress-chart h3,
+.lesson-history h3,
+.detected-content h3,
+.audio-analysis h3,
+.pronunciation-lesson-title,
+.game-column h3,
+.item-number,
+.balloon-round-label,
+.tone-analysis h4,
+.feedback-summary h4 {
+    color: var(--primary);
+}
+
+.translation-item,
+.history-item,
+.file-item {
+    border-left-color: #fdba74;
+}
+
+.mode-controls {
+    margin-top: var(--space-md);
+    display: inline-flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: var(--radius-pill);
+    background: #fff7ed;
+    color: var(--text-primary);
+    border: 1px solid #fed7aa;
+    font-weight: 600;
+}
+
+.mode-toggle input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary);
+}
+
+.game-section {
+    position: relative;
+}
+
+.reward-burst-layer {
+    min-height: 28px;
+    margin: 10px 0 2px;
+    text-align: center;
+}
+
+.drag-card.matched.reward-pop {
+    animation: rewardPop var(--reward-duration) ease-out;
+    box-shadow: var(--reward-glow);
+}
+
+@keyframes rewardPop {
+    0% { transform: scale(var(--reward-scale-from)); }
+    45% { transform: scale(var(--reward-scale-to)); }
+    100% { transform: scale(1); }
+}
+
+.reward-burst {
+    font-size: 22px;
+    animation: burst var(--reward-duration) ease-out;
+    transform-origin: center;
+    display: inline-block;
+}
+
+@keyframes burst {
+    0% { opacity: 0; transform: scale(0.6) translateY(6px); }
+    30% { opacity: 1; transform: scale(1.2) translateY(0); }
+    100% { opacity: 0; transform: scale(1.4) translateY(-8px); }
+}
+
+/* Kids Play Mode: hide English and pronunciation hints unless parent enables hints */
+body.kids-mode:not(.show-hints) #practice-tab .pinyin-text,
+body.kids-mode:not(.show-hints) #practice-tab .english-text,
+body.kids-mode:not(.show-hints) #practice-tab .rating-instruction,
+body.kids-mode:not(.show-hints) #practice-tab .metric-input,
+body.kids-mode:not(.show-hints) #practice-tab #pronunciation-notes,
+body.kids-mode:not(.show-hints) #game-tab .card-pinyin,
+body.kids-mode:not(.show-hints) #game-tab .card-label,
+body.kids-mode:not(.show-hints) #game-tab .balloon-prompt-subtitle,
+body.kids-mode:not(.show-hints) #game-tab .balloon-sub {
+    display: none !important;
+}
+
+.drag-card,
+.balloon,
+.btn-icon,
+.tab-btn {
+    min-width: 56px;
+    min-height: 56px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 14px;
+    }
+
+    .tab-content {
+        padding: 20px;
+    }
+
+    .header h1 {
+        font-size: 2.1rem;
+    }
+
+    .mode-controls {
+        width: 100%;
+    }
+
+    .mode-toggle {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+@media (max-width: 560px) {
+    .game-settings-row {
+        grid-template-columns: 1fr;
+    }
 }
 

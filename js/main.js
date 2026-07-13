@@ -62,6 +62,7 @@ export async function initializeApp() {
     
     // Setup event listeners
     setupEventListeners();
+    initializeModeControls();
     
     // Expose global functions for inline event handlers
     setupGlobalFunctions();
@@ -1201,6 +1202,7 @@ function setupDragAndDrop() {
                 if (draggedCard) {
                     draggedCard.classList.add('matched');
                     draggedCard.draggable = false;
+                    triggerHighRewardFeedback(draggedCard);
                 }
                 target.classList.add('matched');
                 
@@ -1242,6 +1244,82 @@ function setupDragAndDrop() {
             });
         });
     });
+}
+
+/**
+ * Read current app mode settings from DOM controls.
+ * @returns {{kidsMode: boolean, showHints: boolean}}
+ */
+function getModeSettings() {
+    const kidsToggle = document.getElementById('kids-mode-toggle');
+    const hintsToggle = document.getElementById('show-hints-toggle');
+
+    const kidsMode = kidsToggle ? kidsToggle.checked : true;
+    const showHints = kidsMode && hintsToggle ? hintsToggle.checked : false;
+
+    return { kidsMode, showHints };
+}
+
+/**
+ * Apply mode classes to body and keep controls in sync.
+ */
+function applyModeClasses() {
+    const kidsToggle = document.getElementById('kids-mode-toggle');
+    const hintsToggle = document.getElementById('show-hints-toggle');
+    if (!kidsToggle || !hintsToggle) return;
+
+    const kidsMode = kidsToggle.checked;
+    const showHints = kidsMode && hintsToggle.checked;
+
+    document.body.classList.toggle('kids-mode', kidsMode);
+    document.body.classList.toggle('show-hints', showHints);
+    hintsToggle.disabled = !kidsMode;
+}
+
+/**
+ * Register handlers for Kids/Parent display mode controls.
+ */
+function initializeModeControls() {
+    const kidsToggle = document.getElementById('kids-mode-toggle');
+    const hintsToggle = document.getElementById('show-hints-toggle');
+    const balloonLanguageSelect = document.getElementById('balloon-display-language');
+    if (!kidsToggle || !hintsToggle) return;
+
+    kidsToggle.addEventListener('change', applyModeClasses);
+    hintsToggle.addEventListener('change', applyModeClasses);
+
+    if (balloonLanguageSelect) {
+        balloonLanguageSelect.addEventListener('change', () => {
+            if (balloonLanguageSelect.value !== 'english') return;
+            if (!kidsToggle.checked || hintsToggle.checked) return;
+
+            // Selecting English text in Kids mode implies parent-enabled hints.
+            hintsToggle.checked = true;
+            applyModeClasses();
+        });
+    }
+
+    applyModeClasses();
+}
+
+/**
+ * High-intensity reward feedback for a correct match.
+ * @param {HTMLElement} tile - Matched draggable tile
+ */
+function triggerHighRewardFeedback(tile) {
+    if (!tile) return;
+
+    tile.classList.remove('reward-pop');
+    void tile.offsetWidth;
+    tile.classList.add('reward-pop');
+
+    const burst = document.getElementById('rewardBurst');
+    if (!burst) return;
+
+    burst.innerHTML = '<span class="reward-burst">⭐✨🎉</span>';
+    setTimeout(() => {
+        burst.innerHTML = '';
+    }, 430);
 }
 
 /**

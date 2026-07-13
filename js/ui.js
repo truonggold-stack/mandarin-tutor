@@ -346,6 +346,78 @@ export function displayPronunciationProgress() {
 }
 
 /**
+ * Build a Twemoji clip-art URL from an emoji glyph.
+ * @param {string} emoji
+ * @returns {string|null}
+ */
+function getClipArtUrl(emoji) {
+    if (!emoji || typeof emoji !== 'string') return null;
+
+    const codePoints = Array.from(emoji.trim())
+        .map(char => char.codePointAt(0).toString(16).toUpperCase().padStart(4, '0'))
+        .filter(code => code !== 'FE0F');
+
+    if (!codePoints.length) return null;
+
+    return `https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/${codePoints.join('-').toLowerCase()}.svg`;
+}
+
+/**
+ * Create short fallback initials for a card visual.
+ * @param {string} text
+ * @returns {string}
+ */
+function getCardInitials(text) {
+    if (!text || typeof text !== 'string') return '词';
+    const words = text.trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return '词';
+    return words.slice(0, 2).map(word => word[0].toUpperCase()).join('');
+}
+
+/**
+ * Derive a visual category for matching cards based on English text.
+ * @param {string} english
+ * @returns {'animal'|'food'|'family'|'color'|'number'|'daily'}
+ */
+function getWordCategory(english) {
+    const value = String(english || '').toLowerCase();
+
+    const groups = {
+        animal: ['dog', 'cat', 'bird', 'fish', 'rabbit', 'tiger', 'lion', 'elephant', 'monkey', 'panda', 'bear', 'horse', 'cow', 'pig', 'chicken', 'duck', 'sheep', 'mouse', 'pet', 'animal'],
+        food: ['food', 'water', 'milk', 'juice', 'tea', 'coffee', 'rice', 'bread', 'noodles', 'meat', 'egg', 'vegetable', 'fruit', 'apple', 'banana', 'grape', 'watermelon', 'strawberry', 'cake', 'candy', 'ice cream', 'soup', 'salt', 'sugar'],
+        family: ['mother', 'mom', 'father', 'dad', 'parents', 'child', 'son', 'daughter', 'brother', 'sister', 'grandmother', 'grandfather', 'aunt', 'uncle', 'family', 'baby'],
+        color: ['red', 'blue', 'yellow', 'green', 'black', 'white', 'orange', 'purple', 'pink', 'brown', 'gray', 'color'],
+        number: ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'hundred', 'thousand']
+    };
+
+    for (const [category, words] of Object.entries(groups)) {
+        if (words.includes(value)) {
+            return category;
+        }
+    }
+
+    return 'daily';
+}
+
+/**
+ * Human-friendly label for category badge.
+ * @param {string} category
+ * @returns {string}
+ */
+function getCategoryLabel(category) {
+    const labels = {
+        animal: 'Animal',
+        food: 'Food',
+        family: 'Family',
+        color: 'Color',
+        number: 'Number',
+        daily: 'Daily'
+    };
+
+    return labels[category] || 'Daily';
+}
+
+/**
  * Render game board
  * @param {Array} chinesePairs - Chinese cards
  * @param {Array} imagePairs - Image cards
@@ -387,11 +459,21 @@ export function renderGameBoard(chinesePairs, imagePairs) {
     // Render image cards
     imagePairs.forEach(pair => {
         const card = document.createElement('div');
-        card.className = 'drag-card drop-target image-card';
+        const category = getWordCategory(pair.english);
+        const categoryLabel = getCategoryLabel(category);
+        card.className = `drag-card drop-target image-card category-${category}`;
         card.dataset.pairId = pair.id;
+        const illustrationUrl = getClipArtUrl(pair.emoji);
+        const fallbackInitials = getCardInitials(pair.english);
         card.innerHTML = `
             <div class="card-content">
-                <div class="card-emoji">${pair.emoji}</div>
+                <div class="card-badge">${categoryLabel}</div>
+                <div class="card-illustration-wrap">
+                    ${illustrationUrl
+                        ? `<img class="card-illustration" src="${illustrationUrl}" alt="${pair.english} illustration" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+                        : ''}
+                    <div class="card-illustration-fallback" style="display:${illustrationUrl ? 'none' : 'flex'};">${fallbackInitials}</div>
+                </div>
                 <div class="card-label">${pair.english}</div>
             </div>
         `;
